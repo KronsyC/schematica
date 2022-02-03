@@ -1,5 +1,5 @@
 {
-  "name": "jayson",
+  "name": "jsonworks",
   "version": "1.0.0",
   "description": "General Purpose library for working with Json, includes validation and parsing utils",
   "main": "./dist/index.js",

@@ -26,7 +26,7 @@ const isValidUserData = json.addSchema({
 })
 
 console.log(isValidUserData({
-    name: "KronsyC😊",
+    name: "Kronsy",
     age: Number.MAX_VALUE+1
 }))
 
