@@ -1,0 +1,17 @@
+{
+  "name": "jayson",
+  "version": "1.0.0",
+  "description": "General Purpose library for working with Json, includes validation and parsing utils",
+  "main": "./dist/index.js",
+  "repository": "https://github.com/KronsyC/jayson",
+  "author": "Kronsy",
+  "license": "MIT",
+  "scripts": {
+    "dev": "ts-node-dev ./src/testing.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.14",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.5.5"
+  }
+}
