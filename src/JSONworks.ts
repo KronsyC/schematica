@@ -4,8 +4,6 @@
  */
 
 import Validator from "./Validator";
-import Parser from "./Parser";
-import Encoder from "./Enoder";
 import { Schema as SchemaType } from "./types/schemas";
 import Schema from "./Schema";
 import ERR_UNKNOWN_REF from "./errors/ERR_UNKNOWN_REF";
@@ -18,7 +16,6 @@ const kSchemaRefStore = Symbol("Schema Store");
 export default class JSONworks {
     // Store the scemas with their refs
     [kSchemaRefStore]: Map<string, Schema> = new Map();
-
     [kValidator]:Validator
     constructor() {
         this[kValidator] = new Validator()
@@ -72,8 +69,8 @@ export default class JSONworks {
      * @param schema The Schema to create a validator for
      * @description Build a Validator function for the provided Schema
      */
+     buildValidator(schema:Schema): (data:unknown)=>boolean
     buildValidator(ref:string): (data:unknown)=>boolean
-    buildValidator(schema:Schema): (data:unknown)=>boolean
     buildValidator(arg:Schema|string): (data:unknown)=>boolean{
         if(typeof arg === "string"){
             return this.buildValidator(this.getSchema(arg))

@@ -1,14 +1,14 @@
-import { defaultStringSchema, Schema } from ".";
+import { defaultStringSchema, Schema as SchemaT } from "./types/schemas";
 import ERR_INVALID_RANGE from "./errors/ERR_INVALID_RANGE";
 import ERR_TYPE_MISMATCH from "./errors/ERR_TYPE_MISMATCH";
-import {Schema as SchemaT} from "./types/schemas";
 import checkStringEncoding from "./util/checkStringEncoding";
 import rfdc from "rfdc"
+import Schema from "./Schema";
 
 class ValidatorBuilder{
     buildStringValidator(schema:SchemaT) {
         // Use the defaults, and overwrite with the provided values
-        // FIXME: Speed this up, may be a bottleneck in the future  
+        // FIXME: Speed this up, may be a bottleneck in the futur  
         schema =  Object.assign(rfdc({proto:true})(defaultStringSchema), schema)
         
         if (schema.type === "string") {
@@ -172,7 +172,7 @@ class ValidatorBuilder{
         return booleanValidator
     }
 
-    build(schema:Schema){
+    build(schema:Schema):(data:unknown)=>boolean{
         
         
         switch(schema.type){
@@ -186,6 +186,8 @@ class ValidatorBuilder{
                 return this.buildObjectValidator(schema.schema);
             case "string":
                 return this.buildStringValidator(schema.schema);
+            default:
+                throw new Error("Invalid Schema Type")
             
         }
     }
