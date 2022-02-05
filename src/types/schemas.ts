@@ -30,21 +30,28 @@ export interface StringSchema extends SchemaTic {
     minLength?: number;
 
     /**
-     * Should excess whitespace be trimmed before validation
+     * Trim excess whitespace before validation   
+     * defaults to false
      */
     trim?:boolean;
     /**
-     * Remove all characters that are not supported by the encoding    
+     * Reject strings with characters outside this encoding    
      * defaults to ascii
      */
-    encoding?: TextEncoding
+    encoding?: TextEncoding,
+
+    /**
+     * The String must match regex
+     */
+    match?: RegExp
 }
 export const defaultStringSchema:StringSchema = {
     type: "string",
     minLength: 0,
     maxLength:undefined,
     trim: false,
-    encoding: "unicode"
+    encoding: "unicode",
+    match: undefined
 }
 
 export interface NumberSchema extends SchemaTic {

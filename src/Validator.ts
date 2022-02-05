@@ -1,16 +1,16 @@
 import { defaultStringSchema, Schema } from ".";
 import ERR_INVALID_RANGE from "./errors/ERR_INVALID_RANGE";
 import ERR_TYPE_MISMATCH from "./errors/ERR_TYPE_MISMATCH";
-import ERR_UNKNOWN_REF from "./errors/ERR_UNKNOWN_REF";
-import { VSchema } from "./types/validatorSchema";
+import {Schema as SchemaT} from "./types/schemas";
 import checkStringEncoding from "./util/checkStringEncoding";
-const kSchemaRefStore = Symbol("Schema Reference Store")
+import rfdc from "rfdc"
 
 class ValidatorBuilder{
-    static buildStringValidator(schema:VSchema) {
+    buildStringValidator(schema:SchemaT) {
         // Use the defaults, and overwrite with the provided values
-        schema = Object.assign(defaultStringSchema, schema)
-
+        // FIXME: Speed this up, may be a bottleneck in the future  
+        schema =  Object.assign(rfdc({proto:true})(defaultStringSchema), schema)
+        
         if (schema.type === "string") {
             
             if (schema.maxLength && schema.minLength && !(schema.maxLength - schema.minLength >= 0)) {
@@ -18,7 +18,7 @@ class ValidatorBuilder{
                 throw new ERR_INVALID_RANGE();
             }
                     
-            function stringValidator(data: unknown) {
+            function stringValidator(data: unknown) {               
                 if(schema.type==="string"&&typeof data === "string"){
                     if(schema.trim){
                         data = data.trim()
@@ -36,6 +36,17 @@ class ValidatorBuilder{
                             ? data.length >= schema.minLength
                             : true)
                     ){
+                        // Run the Regex last because it is expensive
+                        if(schema.match&&typeof data==="string"){
+                            
+                            if(schema.match.test(data)){
+                                
+                                return true
+                            }
+                            else{
+                                return false
+                            }
+                        }
                         return true
                     }
                     else{
@@ -58,13 +69,13 @@ class ValidatorBuilder{
 
         
     }
-    static buildArrayValidator(schema:VSchema) {
+    buildArrayValidator(schema:SchemaT) {
         function arrayValidator(data:unknown){
             return true
         }
         return arrayValidator
     }
-    static buildNumberValidator(schema:VSchema) {
+    buildNumberValidator(schema:SchemaT) {
         
         if (schema.type === "number") {
             
@@ -95,7 +106,7 @@ class ValidatorBuilder{
             throw new ERR_TYPE_MISMATCH();
         }
     }
-    static buildObjectValidator(schema:VSchema){
+    buildObjectValidator(schema:SchemaT){
         
         // Build all the child validators and add them to an object
         const validators: { [key: string]: Function } = {};
@@ -106,7 +117,9 @@ class ValidatorBuilder{
                 
                 const sch = new Schema(schemaProperties)
                 
-                validators[name] = this.build(sch);  
+                
+                validators[name] = this.build(sch);
+                
             }
         } else {
             // This should never actually run, but better to be safe than sorry     
@@ -148,9 +161,9 @@ class ValidatorBuilder{
         
         return objectValidator;
     }
-    static buildBooleanValidator(schema:VSchema) {
+    buildBooleanValidator(schema:SchemaT) {
         function booleanValidator(data: unknown) {
-            if (typeof data === 'boolean') {
+            if (typeof data === 'boolean' &&schema.type === "boolean") {
                 return true;
             } else {
                 return false;
@@ -159,7 +172,9 @@ class ValidatorBuilder{
         return booleanValidator
     }
 
-    static build(schema:Schema){
+    build(schema:Schema){
+        
+        
         switch(schema.type){
             case "array":
                 return this.buildArrayValidator(schema.schema);
@@ -175,43 +190,14 @@ class ValidatorBuilder{
         }
     }
 }
+const kBuilder = Symbol("Validator Builder")
 export default class Validator {
-
-    // Store the scemas with their names
-    [kSchemaRefStore]: Map<string, Schema> = new Map()
-
-    addSchema(schema:Schema|VSchema){
-        if(schema instanceof Schema){
-            // Call the build method directly
-            const name = schema.name
-            if(name){
-                this[kSchemaRefStore].set(name, schema)  
-            }
-            return ValidatorBuilder.build(schema)
-        }
-        else{
-            
-            // Instantiate a new Schema and build it
-            const sc = new Schema(schema)
-            
-            if(sc.name){
-                
-                this[kSchemaRefStore].set(sc.name, sc)
-                
-            }
-
-            
-            const built = ValidatorBuilder.build(sc)
-            
-            return built
-        }
+    [kBuilder]:ValidatorBuilder
+    constructor() {
+        this[kBuilder] = new ValidatorBuilder()
     }
-    getSchema(ref:string){
-        if(this[kSchemaRefStore].has(ref)){
-            return this[kSchemaRefStore].get(ref)
-        }
-        else{
-            throw new ERR_UNKNOWN_REF()
-        }
+
+    build(schema:Schema){
+        return this[kBuilder].build(schema)
     }
 }

@@ -1,34 +1,31 @@
-import { Validator } from ".";
+import JSONworks from "./JSONworks";
+
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+
+const jw = new JSONworks()
 
 
 
-
-const json = new Validator()
-
-const isValidUserData = json.addSchema({
+const userSchema = jw.createSchema({
     type: "object",
-    name: "user validation",
-    required: ["name", "age"],
-    properties: {
-        name: {
+    name: "user",
+    additionalProperties: true,
+    properties:{ 
+        username: {
             type: "string",
-            minLength: 3,
+            encoding: "ascii",
             trim: true,
-            encoding: "ascii"
+            match: emailRegex
         },
-        age: {
-            type: "number",
-            min: 13,
-            max: Infinity,
-            casting: true
+        password: {
+            type: "string"
         }
     }
 })
 
-console.log(isValidUserData({
-    name: "Kronsy",
-    age: Number.MAX_VALUE+1
+console.log(jw.buildValidator(userSchema)({
+    username: "samir@mail.net",
+    password: "helloWorld"
 }))
-
 // Dont exit ts-node-dev
 while(true){}

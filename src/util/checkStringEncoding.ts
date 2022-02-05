@@ -16,7 +16,6 @@ export default function checkStringEncoding(
             break;
         case "unicode":
             for (let char of text) {
-                console.log(char.charCodeAt(0));
                 if (char.charCodeAt(0) > 1_111_998) {
                     return false;
                 }
