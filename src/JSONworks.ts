@@ -3,11 +3,11 @@
  * Responsible for managing caching as well as the other utilities
  */
 
-import Validator from "./Validator";
+import Validator from "./lib/Validator/Validator";
 import { Schema as SchemaType } from "./types/schemas";
-import Schema from "./Schema";
+import Schema from "./lib/Schema";
 import ERR_UNKNOWN_REF from "./errors/JSONworks/ERR_UNKNOWN_REF";
-import Encoder from "./Encoder";
+import Encoder from "./lib/Encoder/Encoder";
 
 const kValidator = Symbol("Validator");
 const kParser = Symbol("Parser");
@@ -72,7 +72,7 @@ export default class JSONworks {
      * @param schema The Schema to create a validator for
      * @description Build a Validator function for the provided Schema
      */
-     buildValidator(schema:Schema): (data:unknown)=>boolean
+    buildValidator(schema:Schema): (data:unknown)=>boolean
     buildValidator(ref:string): (data:unknown)=>boolean
     buildValidator(arg:Schema|string): (data:unknown)=>boolean{
         if(typeof arg === "string"){
@@ -84,5 +84,10 @@ export default class JSONworks {
         else{
             throw new Error("The Argument passed to buildValidator was not a string or Schema").name="ERR_INVALID_ARGS"
         }
+    }
+
+
+    buildSerializer(schema:Schema): (data:unknown)=>string{
+        return this[kEncoder].build(schema)
     }
 }

@@ -1,6 +1,6 @@
-import { TextEncoding } from "../types/types";
+import { TextEncoding } from "../../types/types";
 
-export default function checkStringEncoding(
+const checkStringEncoding = (function(
     text: string,
     encoding: TextEncoding
 ): boolean {
@@ -15,12 +15,8 @@ export default function checkStringEncoding(
             }
             break;
         case "unicode":
-            for (let char of text) {
-                if (char.charCodeAt(0) > 1_111_998) {
-                    return false;
-                }
-            }
-            break;
+            return true // I know this is terrible and may fail, but it's optimized TODO: Make this actually check
     }
     return true;
-}
+})
+export default checkStringEncoding

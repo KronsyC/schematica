@@ -8,6 +8,7 @@ interface SchemaTic{
      * The name that the schema will be referenced as
      */
     name?:string;
+
 }
 
 export interface ObjectSchema extends SchemaTic {
@@ -41,7 +42,8 @@ export interface StringSchema extends SchemaTic {
     encoding?: TextEncoding,
 
     /**
-     * The String must match regex
+     * The String must match regex   
+     * `WARNING` This adds significant processing time to the schema
      */
     match?: RegExp
 }
@@ -69,7 +71,7 @@ export interface ArraySchema extends SchemaTic {
     type: 'array';
     minLength?: number;
     maxLength?: number;
-    keys: Schema[];
+    keys: Schema;
 }
 export interface BooleanSchema extends SchemaTic {
     type: 'boolean';
