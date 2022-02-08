@@ -71,7 +71,7 @@ export interface ArraySchema extends SchemaTic {
     type: 'array';
     minLength?: number;
     maxLength?: number;
-    keys: Schema;
+    keys: Schema | Schema[];
 }
 export interface BooleanSchema extends SchemaTic {
     type: 'boolean';

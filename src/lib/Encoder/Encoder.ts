@@ -3,7 +3,7 @@ import { SchemaType } from "../../types/schemas";
 import ERR_TYPE_MISMATCH from "../../errors/schema/ERR_TYPE_MISMATCH";
 import ERR_MISMATCHED_DATA from "../../errors/encoder/ERR_MISMATCHED_DATA";
 import Validator from "../Validator/Validator";
-import Schema from "../Schema";
+import Schema from "../../Schema";
 import ERR_BAD_TYPE from "../../errors/schema/ERR_BAD_TYPE";
 
 function assertSchemaType(schema: Schema, type: SchemaType) {
@@ -37,10 +37,6 @@ export default class Encoder {
             let json = "{";
 
             _schema.properties.forEach((value, key) => {
-                // console.log(`${key} => ${JSON.stringify(value.storage.forEach(s=>s))}`);
-                
-                // const encoder = value.storage.get("serializer")
-                // console.log(encoder);
 
                 const encoder = value.storage.get("serializer")
                 
@@ -132,8 +128,26 @@ export default class Encoder {
         return stringEncoder;
     }
     buildArrayEncoder(schema: Schema): (data: unknown) => string {
-        throw (new Error("Arrays currently not implemented").name =
-            "ERR_NOT_IMPLEMENTED");
+        const arrayEncoder = (data: unknown): string => {
+            if (Array.isArray(data)) {
+                if (validator(data) && typeof data === "object" && data) {
+                    return "Sample Array"
+                } else {
+                    throw new ERR_MISMATCHED_DATA();
+                }
+            } else {
+                throw new ERR_TYPE_MISMATCH();
+            }
+        };
+        assertSchemaType(schema, "array");
+        const validator = this.getValidator(schema);
+        // Prebuild all encoders
+        schema.properties.forEach((p) => {
+            
+            p.storage.set("serializer", this.build(p));
+            
+        });
+        return arrayEncoder;
     }
     /**
      * Build A JSON encoder with the provided schema

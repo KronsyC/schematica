@@ -3,7 +3,7 @@ import ERR_INVALID_RANGE from "../../errors/schema/ERR_INVALID_RANGE";
 import ERR_TYPE_MISMATCH from "../../errors/schema/ERR_TYPE_MISMATCH";
 import checkStringEncoding from "./checkStringEncoding";
 import rfdc from "rfdc";
-import Schema from "../Schema";
+import Schema from "../../Schema";
 
 class ValidatorBuilder {
     returnTrue(data: unknown) {
@@ -63,44 +63,48 @@ class ValidatorBuilder {
             throw new ERR_TYPE_MISMATCH();
         }
     }
+    private buildMonoTypedArrayValidator(_schema:Schema){
+        const schema = (<Schema><unknown>_schema.keys).schema
+        const keyType = schema
+        const keySchema = new Schema(keyType);
+
+        const keyValidator = this.build(keySchema);
+        return function arrayValidator(data: unknown) {
+            if (Array.isArray(data) && schema.type === "array") {
+                const length = data.length;
+
+                if (
+                    (schema.maxLength
+                        ? data.length <= schema.maxLength
+                        : true) &&
+                    (schema.minLength
+                        ? data.length >= schema.minLength
+                        : true)
+                ) {
+                    let i = length - 1;
+                    while (i >= 0) {
+                        if (!keyValidator(data[i])) {
+                            return true;
+                        }
+                        i--;
+                    }
+
+                    // return valid;
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+            return true;
+        };
+    }
     buildArrayValidator(_schema: Schema) {
         const schema = _schema.schema;
 
         if (schema.type === "array") {
-            const keyType = schema.keys;
-            const keySchema = new Schema(keyType);
 
-            const keyValidator = this.build(keySchema);
-            return function arrayValidator(data: unknown) {
-                if (Array.isArray(data) && schema.type === "array") {
-                    const length = data.length;
-
-                    if (
-                        (schema.maxLength
-                            ? data.length <= schema.maxLength
-                            : true) &&
-                        (schema.minLength
-                            ? data.length >= schema.minLength
-                            : true)
-                    ) {
-                        let i = length - 1;
-                        while (i >= 0) {
-                            if (!keyValidator(data[i])) {
-                                return true;
-                            }
-                            i--;
-                        }
-
-                        // return valid;
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-                return true;
-            };
         } else {
             throw new ERR_TYPE_MISMATCH();
         }

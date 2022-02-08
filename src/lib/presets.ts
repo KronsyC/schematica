@@ -1,4 +1,4 @@
-import Schema from './Schema';
+import Schema from '../Schema';
 export default class Presets{
     static email = new Schema({
         type: "string",

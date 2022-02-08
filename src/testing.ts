@@ -16,13 +16,16 @@ const userSchema = jw.createSchema({
         },
         PII: {
             type: "object",
-            required: ["email", "password"],
+            required: ["email", "password", "isMinor"],
             properties: {
                 email: {
                     type: "string"
                 },
                 password: {
                     type: "string"
+                },
+                isMinor: {
+                    type: "boolean"
                 }
             }
         }
@@ -34,10 +37,18 @@ const data = {
     PII: {
         email: "abc",
         password: "def",
+        isMinor: false
     }
 }
 const encoder = jw.buildSerializer(userSchema)
 let encoded;
+console.time("encode")
+for(let i = 0; i<=10000;i++){
+    encoded = JSON.stringify(data);
+}
+console.timeEnd("encode")
+console.log(encoded);
+
 console.time("encode")
 for(let i = 0; i<=10000;i++){
     encoded = encoder(data);

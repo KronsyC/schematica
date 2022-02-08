@@ -1,8 +1,8 @@
-import ERR_INVALID_RANGE from "../errors/schema/ERR_INVALID_RANGE";
-import ERR_MALFORMED_NAME from "../errors/schema/ERR_MALFORMED_NAME";
-import ERR_MISSING_REQUIRED_PROPERTY from "../errors/schema/ERR_MISSING_REQUIRED_PROPERTY";
-import { SchemaType } from "../types/schemas";
-import { Schema as SchemaT } from "../types/schemas";
+import ERR_INVALID_RANGE from "./errors/schema/ERR_INVALID_RANGE";
+import ERR_MALFORMED_NAME from "./errors/schema/ERR_MALFORMED_NAME";
+import ERR_MISSING_REQUIRED_PROPERTY from "./errors/schema/ERR_MISSING_REQUIRED_PROPERTY";
+import { SchemaType } from "./types/schemas";
+import { Schema as SchemaT } from "./types/schemas";
 
 export default class Schema {
     type: SchemaType;
@@ -10,6 +10,7 @@ export default class Schema {
     schema: SchemaT;
     validator?: (data:unknown)=>boolean;
     properties:Map<string, Schema> = new Map()
+    keys: Schema[] = []
     storage: Map<string, any>=new Map()
     constructor(opts: SchemaT) {
         this.name = opts.name;
@@ -23,6 +24,16 @@ export default class Schema {
                 
             }
         }
+        else if (this.schema.type==="array"){
+            if(Array.isArray(this.schema.keys)){
+                this.schema.keys.forEach(k => {
+                    this.keys.push(new Schema(k));
+                })
+            }
+            else
+            {
+                this.keys.push(new Schema(this.schema));
+            }
         // Validate the schema, throws errors if anything went wrong
         // Offloads validation logic from the rest of the program
         this.validate();

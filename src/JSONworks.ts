@@ -5,7 +5,7 @@
 
 import Validator from "./lib/Validator/Validator";
 import { Schema as SchemaType } from "./types/schemas";
-import Schema from "./lib/Schema";
+import Schema from "./Schema";
 import ERR_UNKNOWN_REF from "./errors/JSONworks/ERR_UNKNOWN_REF";
 import Encoder from "./lib/Encoder/Encoder";
 
