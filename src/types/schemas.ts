@@ -64,10 +64,6 @@ export interface NumberSchema extends SchemaTic {
      * The minimum value of the number
      */
     min?: number;
-    /**
-     * If this value is enabled, also accepts strings containing a number
-     */
-    casting?:boolean;
 }
 export interface ArraySchema extends SchemaTic {
     type: 'array';

@@ -1,23 +1,20 @@
 import { defaultStringSchema, Schema as SchemaT } from "./types/schemas";
-import ERR_INVALID_RANGE from "./errors/ERR_INVALID_RANGE";
-import ERR_TYPE_MISMATCH from "./errors/ERR_TYPE_MISMATCH";
+import ERR_INVALID_RANGE from "./errors/schema/ERR_INVALID_RANGE";
+import ERR_TYPE_MISMATCH from "./errors/schema/ERR_TYPE_MISMATCH";
 import checkStringEncoding from "./util/checkStringEncoding";
 import rfdc from "rfdc"
 import Schema from "./Schema";
 
 class ValidatorBuilder{
-    buildStringValidator(schema:SchemaT) {
+    buildStringValidator(_schema:Schema) {
+        let schema = _schema.schema
+        
         // Use the defaults, and overwrite with the provided values
         // FIXME: Speed this up, may be a bottleneck in the futur  
         schema =  Object.assign(rfdc({proto:true})(defaultStringSchema), schema)
         
         if (schema.type === "string") {
-            
-            if (schema.maxLength && schema.minLength && !(schema.maxLength - schema.minLength >= 0)) {
-                // Invalid range was provided, i.e min greater than max
-                throw new ERR_INVALID_RANGE();
-            }
-                    
+                
             function stringValidator(data: unknown) {               
                 if(schema.type==="string"&&typeof data === "string"){
                     if(schema.trim){
@@ -69,13 +66,16 @@ class ValidatorBuilder{
 
         
     }
-    buildArrayValidator(schema:SchemaT) {
+    buildArrayValidator(_schema:Schema) {
+        const schema = _schema.schema
+
         function arrayValidator(data:unknown){
             return true
         }
         return arrayValidator
     }
-    buildNumberValidator(schema:SchemaT) {
+    buildNumberValidator(_schema:Schema) {
+        const schema = _schema.schema
         
         if (schema.type === "number") {
             
@@ -106,8 +106,8 @@ class ValidatorBuilder{
             throw new ERR_TYPE_MISMATCH();
         }
     }
-    buildObjectValidator(schema:SchemaT){
-        
+    buildObjectValidator(_schema:Schema){
+        const schema = _schema.schema
         // Build all the child validators and add them to an object
         const validators: { [key: string]: Function } = {};
         
@@ -161,7 +161,8 @@ class ValidatorBuilder{
         
         return objectValidator;
     }
-    buildBooleanValidator(schema:SchemaT) {
+    buildBooleanValidator(_schema:Schema) {
+        const schema = _schema.schema
         function booleanValidator(data: unknown) {
             if (typeof data === 'boolean' &&schema.type === "boolean") {
                 return true;
@@ -174,22 +175,30 @@ class ValidatorBuilder{
 
     build(schema:Schema):(data:unknown)=>boolean{
         
+        let validator;
         
-        switch(schema.type){
+        switch(schema.schema.type){
             case "array":
-                return this.buildArrayValidator(schema.schema);
+                validator = this.buildArrayValidator(schema);
+                break;
             case "boolean":
-                return this.buildBooleanValidator(schema.schema);
+                validator = this.buildBooleanValidator(schema);
+                break;
             case "number":
-                return this.buildNumberValidator(schema.schema);
+                validator = this.buildNumberValidator(schema);
+                break;
             case "object":
-                return this.buildObjectValidator(schema.schema);
+                validator = this.buildObjectValidator(schema);
+                break;
             case "string":
-                return this.buildStringValidator(schema.schema);
+                validator = this.buildStringValidator(schema);
+                break;
             default:
                 throw new Error("Invalid Schema Type")
             
         }
+        schema.storage.set("validator", validator)
+        return validator
     }
 }
 const kBuilder = Symbol("Validator Builder")

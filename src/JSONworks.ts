@@ -6,7 +6,8 @@
 import Validator from "./Validator";
 import { Schema as SchemaType } from "./types/schemas";
 import Schema from "./Schema";
-import ERR_UNKNOWN_REF from "./errors/ERR_UNKNOWN_REF";
+import ERR_UNKNOWN_REF from "./errors/JSONworks/ERR_UNKNOWN_REF";
+import Encoder from "./Encoder";
 
 const kValidator = Symbol("Validator");
 const kParser = Symbol("Parser");
@@ -17,8 +18,10 @@ export default class JSONworks {
     // Store the scemas with their refs
     [kSchemaRefStore]: Map<string, Schema> = new Map();
     [kValidator]:Validator
+    [kEncoder]:Encoder
     constructor() {
         this[kValidator] = new Validator()
+        this[kEncoder] = new Encoder()
     }
     
 
