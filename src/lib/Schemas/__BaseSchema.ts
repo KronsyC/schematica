@@ -7,13 +7,13 @@ export type SchemaType =
     | "null";
 export interface BaseSchemaTemplate{
     type: SchemaType;
-    name: string;
+    name?: string;
 }
 /**
  * The Class from which all schemas are based from
  * T is the template Type
  */
-export default class BaseSchema<T extends BaseSchemaTemplate> {
+export class BaseSchema<T extends BaseSchemaTemplate> {
     type: SchemaType;
     /**
      * The name of the schema, used to reference it in other schemas

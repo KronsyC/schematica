@@ -1,12 +1,8 @@
-import NumberSchema, { NumberSchemaTemplate } from './_NumberSchema';
-import ObjectSchema, { ObjectSchemaTemplate } from './_ObjectSchema';
-import BooleanSchema, { BooleanSchemaTemplate } from './_BooleanSchema';
-import StringSchema, { StringSchemaTemplate } from './_StringSchema';
-import NullSchema, { NullSchemaTemplate } from './_NullSchema';
-
 /**
  * Abstracts away the class constructors to a single function
  */
+
+import { BooleanSchema, BooleanSchemaTemplate, NullSchema, NullSchemaTemplate, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema, StringSchemaTemplate } from "."
 
 export type GenericSchemaTemplate = StringSchemaTemplate | BooleanSchemaTemplate | ObjectSchemaTemplate | NumberSchemaTemplate | NullSchemaTemplate
 export type GenericSchema = StringSchema | BooleanSchema | ObjectSchema | NumberSchema | NullSchema

@@ -1,13 +1,14 @@
+import { BaseSchema } from './lib/Schemas/__BaseSchema';
 /**
  * This is the base class initialized by the user
  * Responsible for managing caching as well as the other utilities
  */
 
 import Validator from "./lib/Validator/Validator";
-import { Schema as SchemaType } from "./types/schemas";
-import Schema from "./Schema";
 import ERR_UNKNOWN_REF from "./errors/JSONworks/ERR_UNKNOWN_REF";
 import Encoder from "./lib/Encoder/Encoder";
+import { GenericSchema, GenericSchemaTemplate } from ".";
+import newSchema from "./lib/Schemas";
 
 const kValidator = Symbol("Validator");
 const kParser = Symbol("Parser");
@@ -16,7 +17,7 @@ const kSchemaRefStore = Symbol("Schema Store");
 
 export default class JSONworks {
     // Store the scemas with their refs
-    [kSchemaRefStore]: Map<string, Schema> = new Map();
+    [kSchemaRefStore]: Map<string, GenericSchema> = new Map();
     [kValidator]:Validator
     [kEncoder]:Encoder
     constructor() {
@@ -30,12 +31,12 @@ export default class JSONworks {
      * @param schema A schema strucure or a schema template
      * @description Create a schema and saves it
      */
-    addSchema(schema:Schema):Schema
-    addSchema(template:SchemaType):Schema
-    addSchema(schema: Schema|SchemaType):Schema {
+    addSchema(schema:GenericSchema):GenericSchema
+    addSchema(template:GenericSchemaTemplate):GenericSchema
+    addSchema(schema: GenericSchema|GenericSchemaTemplate):GenericSchema {
         // Instantiate a new Schema and return it
-        let sc:Schema
-        if(schema instanceof Schema){
+        let sc:GenericSchema
+        if(schema instanceof BaseSchema){
             sc = schema
         }
         else{
@@ -55,10 +56,10 @@ export default class JSONworks {
      * @param schema The schema you want to create
      * @description Create a schema with the given template
      */
-    createSchema(schema:SchemaType):Schema{
-        return new Schema(schema)
+    createSchema(schema:GenericSchemaTemplate):GenericSchema{
+        return newSchema(schema)
     }
-    getSchema(ref: string):Schema {
+    getSchema(ref: string):GenericSchema {
         const schema = this[kSchemaRefStore].get(ref);
         if (schema) {
             return schema
@@ -72,13 +73,13 @@ export default class JSONworks {
      * @param schema The Schema to create a validator for
      * @description Build a Validator function for the provided Schema
      */
-    buildValidator(schema:Schema): (data:unknown)=>boolean
+    buildValidator(schema:GenericSchema): (data:unknown)=>boolean
     buildValidator(ref:string): (data:unknown)=>boolean
-    buildValidator(arg:Schema|string): (data:unknown)=>boolean{
+    buildValidator(arg:GenericSchema|string): (data:unknown)=>boolean{
         if(typeof arg === "string"){
             return this.buildValidator(this.getSchema(arg))
         }
-        else if (arg instanceof Schema){
+        else if (arg instanceof BaseSchema){
             return this[kValidator].build(arg)
         }
         else{
@@ -87,7 +88,7 @@ export default class JSONworks {
     }
 
 
-    buildSerializer(schema:Schema): (data:unknown)=>string{
+    buildSerializer(schema:GenericSchema): (data:unknown)=>string{
         return this[kEncoder].build(schema)
     }
 }

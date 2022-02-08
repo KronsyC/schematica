@@ -1,4 +1,4 @@
-import BaseSchema, {BaseSchemaTemplate} from './__BaseSchema';
+import {BaseSchema, BaseSchemaTemplate} from '.';
 import ERR_INVALID_RANGE from './errors/ERR_INVALID_RANGE';
 
 export interface StringSchemaTemplate extends BaseSchemaTemplate{
@@ -10,7 +10,7 @@ export interface StringSchemaTemplate extends BaseSchemaTemplate{
 }
 export type TextEncoding = "ascii"|"utf8"|"unicode"
 
-export default class StringSchema extends BaseSchema<StringSchemaTemplate>{
+export class StringSchema extends BaseSchema<StringSchemaTemplate>{
     minLength:number;
     maxLength:number;
     encoding:TextEncoding;

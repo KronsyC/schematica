@@ -1,11 +1,10 @@
-import BaseSchema, {BaseSchemaTemplate} from './__BaseSchema';
+import {BaseSchema, BaseSchemaTemplate} from '.';
 
 export interface BooleanSchemaTemplate extends BaseSchemaTemplate{
     type: "boolean"
 }
 
-export default class BooleanSchema extends BaseSchema<BooleanSchemaTemplate>{
-
+export class BooleanSchema extends BaseSchema<BooleanSchemaTemplate>{
     constructor(template:BooleanSchemaTemplate){
         super(template)
         this.validateSchema()

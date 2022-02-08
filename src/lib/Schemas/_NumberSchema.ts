@@ -1,4 +1,4 @@
-import BaseSchema, {BaseSchemaTemplate} from './__BaseSchema';
+import {BaseSchema, BaseSchemaTemplate} from '.';
 import ERR_INVALID_RANGE from './errors/ERR_INVALID_RANGE';
 
 export interface NumberSchemaTemplate extends BaseSchemaTemplate{
@@ -7,7 +7,7 @@ export interface NumberSchemaTemplate extends BaseSchemaTemplate{
     max?:number;
 }
 
-export default class NumberSchema extends BaseSchema<NumberSchemaTemplate>{
+export class NumberSchema extends BaseSchema<NumberSchemaTemplate>{
     min:number;
     max:number;
     constructor(template:NumberSchemaTemplate){

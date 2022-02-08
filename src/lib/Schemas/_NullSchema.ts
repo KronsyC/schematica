@@ -1,10 +1,10 @@
-import BaseSchema, {BaseSchemaTemplate} from './__BaseSchema';
+import {BaseSchema, BaseSchemaTemplate} from '.';
 
 export interface NullSchemaTemplate extends BaseSchemaTemplate{
     type: "null"
 }
 
-export default class NullSchema extends BaseSchema<NullSchemaTemplate>{
+export class NullSchema extends BaseSchema<NullSchemaTemplate>{
 
     constructor(template:NullSchemaTemplate){
         super(template)

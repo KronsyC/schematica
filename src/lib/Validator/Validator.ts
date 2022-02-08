@@ -1,79 +1,38 @@
-import { defaultStringSchema, Schema as SchemaT } from "../../types/schemas";
-import ERR_INVALID_RANGE from "../../errors/schema/ERR_INVALID_RANGE";
-import ERR_TYPE_MISMATCH from "../../errors/schema/ERR_TYPE_MISMATCH";
-import checkStringEncoding from "./checkStringEncoding";
-import rfdc from "rfdc";
-import Schema from "../../Schema";
+import { GenericSchema } from '../..';
+import newSchema, {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../Schemas";
 
-class ValidatorBuilder {
-    returnTrue(data: unknown) {
-        return true;
-    }
-    buildStringValidator(_schema: Schema) {
-        let schema = _schema.schema;
 
-        // Use the defaults, and overwrite with the provided values
-        // FIXME: Speed this up, may be a bottleneck in the futur
-        schema = Object.assign(
-            rfdc({ proto: true })(defaultStringSchema),
-            schema
-        );
-
-        if (schema.type === "string") {
-            const stringValidator = function (data: unknown) {
-                if (schema.type === "string" && typeof data === "string") {
-                    if (schema.trim) {
-                        data = data.trim();
-                    }
-                    if (typeof data === "string" && schema.encoding) {
-                        if (!checkStringEncoding(data, schema.encoding)) {
-                            return false;
-                        }
-                    }
-                    if (
-                        typeof data === "string" &&
-                        (schema.maxLength
-                            ? data.length <= schema.maxLength
-                            : true) &&
-                        (schema.minLength
-                            ? data.length >= schema.minLength
-                            : true)
-                    ) {
-                        // Run the Regex last because it is expensive
-                        if (schema.match && typeof data === "string") {
-                            if (schema.match.test(data)) {
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        }
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
+const checkStringEncoding = (function(
+    text: string,
+    encoding: TextEncoding
+): boolean {
+    switch (encoding) {
+        case "utf8":
+        case "ascii":
+            // 128 total character values
+            for (let char of text) {
+                if (char.charCodeAt(0) > 127) {
                     return false;
                 }
-                return true;
-            };
-            // return stringValidator
-            return stringValidator;
-        } else {
-            // This shouldnt ever run, but just to be safe
-            throw new ERR_TYPE_MISMATCH();
-        }
+            }
+            break;
+        case "unicode":
+            return true // I know this is terrible and may fail, but it's optimized TODO: Make this actually check
     }
-    private buildMonoTypedArrayValidator(_schema:Schema){
-        const schema = (<Schema><unknown>_schema.keys).schema
-        const keyType = schema
-        const keySchema = new Schema(keyType);
+    return true;
+})
 
-        const keyValidator = this.build(keySchema);
-        return function arrayValidator(data: unknown) {
-            if (Array.isArray(data) && schema.type === "array") {
-                const length = data.length;
-
+class ValidatorBuilder {
+    buildStringValidator(schema: StringSchema) {
+        const stringValidator = function (data: unknown) {
+            if (typeof data === "string") {
+                if (typeof data === "string" && schema.encoding) {
+                    if (!checkStringEncoding(data, schema.encoding)) {
+                        return false;
+                    }
+                }
                 if (
+                    typeof data === "string" &&
                     (schema.maxLength
                         ? data.length <= schema.maxLength
                         : true) &&
@@ -81,15 +40,14 @@ class ValidatorBuilder {
                         ? data.length >= schema.minLength
                         : true)
                 ) {
-                    let i = length - 1;
-                    while (i >= 0) {
-                        if (!keyValidator(data[i])) {
+                    // Run the Regex last because it is expensive
+                    if (schema.match && typeof data === "string") {
+                        if (schema.match.test(data)) {
                             return true;
+                        } else {
+                            return false;
                         }
-                        i--;
                     }
-
-                    // return valid;
                     return true;
                 } else {
                     return false;
@@ -99,78 +57,54 @@ class ValidatorBuilder {
             }
             return true;
         };
+        // return stringValidator
+        return stringValidator;
     }
-    buildArrayValidator(_schema: Schema) {
-        const schema = _schema.schema;
-
-        if (schema.type === "array") {
-
-        } else {
-            throw new ERR_TYPE_MISMATCH();
-        }
-    }
-    buildNumberValidator(_schema: Schema) {
-        const schema = _schema.schema;
-
-        if (schema.type === "number") {
-            if (schema.max && schema.min && !(schema.max - schema.min >= 0)) {
-                // Invalid range was provided, i.e min greater than max
-                throw new ERR_INVALID_RANGE();
+    buildNumberValidator(schema: NumberSchema) {
+        const numberValidator = function (data: unknown) {
+            if (
+                typeof data === "number" &&
+                (schema.max ? data <= schema.max : true) &&
+                (schema.min ? data >= schema.min : true)
+            ) {
+                return true;
+            } else {
+                return false;
             }
-            const numberValidator = function (data: unknown) {
-                if (
-                    schema.type == "number" &&
-                    typeof data === "number" &&
-                    (schema.max ? data <= schema.max : true) &&
-                    (schema.min ? data >= schema.min : true)
-                ) {
-                    return true;
-                } else {
-                    return false;
-                }
-            };
+        };
+        return numberValidator;
 
-            return numberValidator;
-        } else {
-            // This shouldnt ever run, but just to be safe
-
-            throw new ERR_TYPE_MISMATCH();
-        }
     }
-    buildObjectValidator(_schema: Schema) {
-        const schema = _schema.schema;
+    buildObjectValidator(schema: ObjectSchema) {
+        
         // Build all the child validators and add them to an object
         const validators: { [key: string]: Function } = {};
 
-        if (schema.type === "object") {
-            for (let [name, schemaProperties] of Object.entries(
-                schema.properties
-            )) {
-                const sch = new Schema(schemaProperties);
-
-                validators[name] = this.build(sch);
-            }
-        } else {
-            // This should never actually run, but better to be safe than sorry
-            throw new ERR_TYPE_MISMATCH();
+        for (let [name, sch] of schema.properties) {
+            const built = this.build(sch)
+            sch.cache.set("validator", built)
+            validators[name] = built;
         }
+
         function objectValidator(data: unknown) {
-            if (data && typeof data === "object" && schema.type === "object") {
-                const schemaKeys = Object.keys(schema.properties);
-                if (
-                    schema.required &&
-                    Object.keys(data).length < schema.required.length
-                ) {
-                    return false;
+            if (data && typeof data === "object") {
+                const schemaprops = schema.properties
+                
+                for(let r of schema.required){
+                    console.log(r);
+                    console.log(Object.keys(data));
+                    
+                    if(!Object.keys(data).includes(r)){
+                        console.log("Bad");
+                        
+                        return false
+                    }
                 }
                 for (let [key, value] of Object.entries(data)) {
-                    if (schemaKeys.includes(key)) {
+                    if (schemaprops.has(key)) {
+                        
                         const validator = validators[key];
-                        if (!validator) {
-                            throw new Error(
-                                "Validators were not properly built"
-                            );
-                        }
+
                         if (!validator(value)) {
                             return false;
                         }
@@ -190,10 +124,9 @@ class ValidatorBuilder {
 
         return objectValidator;
     }
-    buildBooleanValidator(_schema: Schema) {
-        const schema = _schema.schema;
+    buildBooleanValidator(schema: BooleanSchema) {
         function booleanValidator(data: unknown) {
-            if (typeof data === "boolean" && schema.type === "boolean") {
+            if (typeof data === "boolean") {
                 return true;
             } else {
                 return false;
@@ -201,32 +134,29 @@ class ValidatorBuilder {
         }
         return booleanValidator;
     }
-
-    build(schema: Schema): (data: unknown) => boolean {
+    build(schema: GenericSchema ): (data: unknown) => boolean {
         let validator;
-        console.log(`Building ${schema.type} validator`);
+        console.log(`Building ${typeof schema} validator`);
 
-        switch (schema.schema.type) {
-            case "array":
-                validator = this.buildArrayValidator(schema);
+        switch (schema.constructor) {
+            case BooleanSchema:
+                
+                validator = this.buildBooleanValidator(schema as BooleanSchema);
                 break;
-            case "boolean":
-                validator = this.buildBooleanValidator(schema);
+            case NumberSchema:
+                validator = this.buildNumberValidator(schema as NumberSchema);
                 break;
-            case "number":
-                validator = this.buildNumberValidator(schema);
+            case ObjectSchema:
+                validator = this.buildObjectValidator(schema as ObjectSchema);
                 break;
-            case "object":
-                validator = this.buildObjectValidator(schema);
-                break;
-            case "string":
-                validator = this.buildStringValidator(schema);
+            case StringSchema:
+                validator = this.buildStringValidator(schema as StringSchema);
                 break;
             default:
                 throw new Error("Invalid Schema Type");
         }
 
-        schema.storage.set("validator", validator);
+        schema.cache.set("validator", validator);
         return validator;
     }
 }
@@ -237,7 +167,7 @@ export default class Validator {
         this[kBuilder] = new ValidatorBuilder();
     }
 
-    build(schema: Schema) {
+    build(schema: GenericSchema) {
         return this[kBuilder].build(schema);
     }
 }
