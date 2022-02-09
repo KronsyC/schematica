@@ -1,7 +1,7 @@
 {
-  "name": "jsonworks",
+  "name": "schematica",
   "version": "1.0.0",
-  "description": "General Purpose library for working with Json, includes validation and parsing utils",
+  "description": "General Purpose library for working with Json, includes validation and parsing utils, currently WIP, array support coming soon",
   "main": "./dist/index.js",
   "repository": "https://github.com/KronsyC/jayson",
   "author": "Kronsy",
@@ -9,13 +9,16 @@
   "scripts": {
     "dev": "ts-node-dev ./src/testing.ts"
   },
+  "keywords": [
+    "json", "schema", "encoder", "serializer", "stringify", "verify", "data", "validate", "validator"
+  ],
+  "files": [
+    "./dist",
+    "./README.md"
+  ],
   "devDependencies": {
     "@types/node": "^17.0.14",
     "ts-node-dev": "^1.1.8",
     "typescript": "^4.5.5"
-  },
-  "dependencies": {
-    "flatstr": "^1.0.12",
-    "rfdc": "^1.3.0"
   }
 }
