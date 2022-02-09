@@ -73,7 +73,8 @@ import Json from "schematica"
 
 const jw = new Json()
 
-const userSchema = jw.createSchema({
+// The Key difference between createSchema and addSchema is that addSchema saves the schema with it's ref whereas createSchema doesn't
+const userSchema = jw.addSchema({
     name: "userSchema",
     ........
 })
