@@ -1,5 +1,5 @@
 import { GenericSchema } from '../..';
-import newSchema, {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../Schemas";
+import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../Schemas";
 
 
 const checkStringEncoding = (function(
@@ -24,39 +24,31 @@ const checkStringEncoding = (function(
 
 class ValidatorBuilder {
     buildStringValidator(schema: StringSchema) {
-        const stringValidator = function (data: unknown) {
+        const stringValidator = (function (data: unknown) {
             if (typeof data === "string") {
-                if (typeof data === "string" && schema.encoding) {
-                    if (!checkStringEncoding(data, schema.encoding)) {
+                if (!checkStringEncoding(data, schema.encoding)) {
+                    return false;
+                }
+                else if(data.length>schema.maxLength){
+                    return false
+                }
+                else if(data.length<schema.minLength){
+                    return false
+                }
+                    // Run the Regex last because it is expensive
+                if (schema.match) {                        
+                    if (schema.match.test(data)) {
+                        return true;
+                    } else {
                         return false;
                     }
                 }
-                if (
-                    typeof data === "string" &&
-                    (schema.maxLength
-                        ? data.length <= schema.maxLength
-                        : true) &&
-                    (schema.minLength
-                        ? data.length >= schema.minLength
-                        : true)
-                ) {
-                    // Run the Regex last because it is expensive
-                    if (schema.match && typeof data === "string") {
-                        if (schema.match.test(data)) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
+                return true;
             }
-            return true;
-        };
+            else{
+                return false
+            }
+        })
         // return stringValidator
         return stringValidator;
     }
@@ -85,42 +77,46 @@ class ValidatorBuilder {
             sch.cache.set("validator", built)
             validators[name] = built;
         }
-
-        function objectValidator(data: unknown) {
-            if (data && typeof data === "object") {
-                const schemaprops = schema.properties
+        const schemaprops = schema.properties
+        const objectValidator = (function(data: unknown, shallow=false) {
+            
+            if (data&&typeof data === "object") {
+                // return true
                 
                 for(let r of schema.required){
-                    console.log(r);
-                    console.log(Object.keys(data));
-                    
-                    if(!Object.keys(data).includes(r)){
-                        console.log("Bad");
-                        
+                    if(!Object.keys(data).includes(r)){         
+                                       
                         return false
                     }
                 }
-                for (let [key, value] of Object.entries(data)) {
-                    if (schemaprops.has(key)) {
-                        
-                        const validator = validators[key];
-
-                        if (!validator(value)) {
-                            return false;
-                        }
-                    } else {
-                        // The key is excess
-                        // Return false if additional Properties are not allowed
-                        if (!schema.additionalProperties) {
-                            return false;
+                
+                if(!shallow){
+                    
+                    // This function validates all children, the shallow option allows the function to do it's own validation
+                    for (let [key, value] of Object.entries(data)) {
+                        if (schemaprops.has(key)) {
+                            
+                            const validator = validators[key];
+    
+                            if (!validator(value)) {
+                                return false;
+                            }
+                        } else {
+                            // The key is excess
+                            // Return false if additional Properties are not allowed
+                            if (!schema.additionalProperties) {
+                                return false;
+                            }
                         }
                     }
                 }
+                
                 return true;
             } else {
+                
                 return false;
             }
-        }
+        })
 
         return objectValidator;
     }
@@ -134,9 +130,8 @@ class ValidatorBuilder {
         }
         return booleanValidator;
     }
-    build(schema: GenericSchema ): (data: unknown) => boolean {
+    build(schema: GenericSchema ): (data: unknown, shallow?:boolean) => boolean {
         let validator;
-        console.log(`Building ${typeof schema} validator`);
 
         switch (schema.constructor) {
             case BooleanSchema:

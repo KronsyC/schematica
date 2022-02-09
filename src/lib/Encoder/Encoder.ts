@@ -2,7 +2,8 @@ import { StringSchema } from './../Schemas/_StringSchema';
 import Validator from "../Validator/Validator";
 import { BooleanSchema, GenericSchema, NumberSchema, ObjectSchema, SchemaType } from "../..";
 import ERR_INVALID_DATA from './errors/ERR_INVALID_DATA';
-
+//@ts-expect-error
+import flatstr from "flatstr"
 
 interface EncoderOpts {
     validator?: Validator;
@@ -23,18 +24,20 @@ export default class Encoder {
             return JSON.stringify(schema);
         }
         let json = "{";
-
         schema.properties.forEach((value, key) => {
-
             const encoder = value.cache.get("serializer")
             
-            const encoded = encoder(object[key])
+            const encode = object[key]
+            if(!encode && !schema.required.includes(key)){
+                return
+            }
+            const encoded = encoder(encode)
             json+=`"${key}":${encoded},`
-            
+            // json+=`"${key}":${value.cache.get("serializer")(object[key])},` 
         });
         return json.slice(0, -1) + "}";
     }
-    getValidator(schema: GenericSchema): (data: unknown) => boolean {
+    getValidator(schema: GenericSchema): (data: unknown, shallow?:boolean) => boolean {
         let validator = schema.cache.get("validator");
         if (!validator) {
             validator = this.validator.build(schema);
@@ -44,7 +47,9 @@ export default class Encoder {
 
     buildObjectEncoder(schema: ObjectSchema): (data: unknown) => string {
         const objectEncoder = (data: unknown): string => {
-            if (validator(data) && typeof data === "object" && data) {
+            const isValid = validator(data, true)
+            
+            if (typeof data === "object" && !!data && isValid) {       
                 let json = this.buildJson(data, schema);
                 return json;
             } else {
