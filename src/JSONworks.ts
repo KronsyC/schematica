@@ -57,7 +57,11 @@ export default class JSONworks {
      * @description Create a schema with the given template
      */
     createSchema(schema:GenericSchemaTemplate):GenericSchema{
-        return newSchema(schema)
+        const sch = newSchema(schema, this[kSchemaRefStore])
+        if(sch.name){
+            this[kSchemaRefStore].set(sch.name, sch)
+        }
+        return sch
     }
     getSchema(ref: string):GenericSchema {
         const schema = this[kSchemaRefStore].get(ref);

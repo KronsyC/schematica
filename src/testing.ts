@@ -1,19 +1,19 @@
 import JSONworks from "./JSONworks";
 const jw = new JSONworks()
 
-
-
-const userSchema = jw.createSchema({
+const userSchema = jw.addSchema({
     type: "object",
-    required: ["password", "username", "email"],
+    name:"user",
+    required: ["username", "email", "password", "age"], // Validators check if all of these properties are present
     properties: {
         username: {
             type: "string",
-            minLength: 5,
-            maxLength: 48
+            minLength: 3, // String minLength and maxLength values are inclusive
+            maxLength: 42
         },
         email: {
             type: "string",
+            match: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ // Strings are able to use regex
         },
         password: {
             type: "string",
@@ -22,25 +22,45 @@ const userSchema = jw.createSchema({
         },
         age: {
             type: "number",
-            min: 13
+            min: 18 
         }
-    },
+    }
 })
 
-const userStringify = jw.buildSerializer(userSchema)
+const messageSchema = jw.createSchema({
+    type: "object",
+    required: ["author", "id"],
+    properties: {
+        id: {
+            type: "number"
+        },
+        author: "$user"
+    }
+})
 
-const before2 = process.hrtime()
-for(let i=0;i<100000; i++){
-    userStringify({
-        username: "KronsyC",
-        email: "kronsycanty@gmail.com",
+const messageValidator = jw.buildValidator(messageSchema)
+
+console.log(messageValidator({
+    id: 1,
+    author: {
+        username: "Casey",
+        email: "casey@example.com",
         password: "abc123",
-        age: 15
-    });
-}
-const diff2 = process.hrtime(before2)
+        age: 123
+    }
+}));
 
-console.log(`Encoding custom takes an average of ${(diff2[0] * 1000 + diff2[1] / 100000)  / 1000000 * 1000}µs `)
+console.log(JSON.stringify({
+    id: 1,
+    author: {
+        username: "John Doe",
+        email: "john@doe.com",
+        age: 27
+    },
+    content: "Hello Everyone! My name is John Doe and I love cats"
+}));
+
+
 
 
 // Dont exit ts-node-dev

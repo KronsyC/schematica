@@ -6,7 +6,7 @@ import { BooleanSchema, BooleanSchemaTemplate, NullSchema, NullSchemaTemplate, N
 
 export type GenericSchemaTemplate = StringSchemaTemplate | BooleanSchemaTemplate | ObjectSchemaTemplate | NumberSchemaTemplate | NullSchemaTemplate
 export type GenericSchema = StringSchema | BooleanSchema | ObjectSchema | NumberSchema | NullSchema
-export default function createSchema(constructor: GenericSchemaTemplate) : GenericSchema{
+export default function createSchema(constructor: GenericSchemaTemplate, schemaRefStore:Map<string, GenericSchema>=new Map()) : GenericSchema{
     switch(constructor.type){
         case "string":
             return new StringSchema(constructor)
@@ -15,7 +15,7 @@ export default function createSchema(constructor: GenericSchemaTemplate) : Gener
         case "number":
             return new NumberSchema(constructor)
         case "object":
-            return new ObjectSchema(constructor)
+            return new ObjectSchema(constructor, schemaRefStore)
         case "null":
             return new NullSchema(constructor)
 
