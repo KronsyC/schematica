@@ -1,6 +1,6 @@
 {
   "name": "schematica",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "General Purpose library for working with Json, includes validation and parsing utils, currently WIP, array support coming soon",
   "main": "./dist/index.js",
   "repository": "https://github.com/KronsyC/jayson",
@@ -10,7 +10,15 @@
     "dev": "ts-node-dev ./src/testing.ts"
   },
   "keywords": [
-    "json", "schema", "encoder", "serializer", "stringify", "verify", "data", "validate", "validator"
+    "json",
+    "schema",
+    "encoder",
+    "serializer",
+    "stringify",
+    "verify",
+    "data",
+    "validate",
+    "validator"
   ],
   "files": [
     "./dist",
