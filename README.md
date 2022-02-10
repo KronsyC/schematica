@@ -1,4 +1,4 @@
-# JSONworks
+# Schematica
 ### The fully featured JSON manipulation library
 
 ## Features

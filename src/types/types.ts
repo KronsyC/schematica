@@ -1,1 +1,0 @@
-export type TextEncoding = "ascii"|"utf8"|"unicode"

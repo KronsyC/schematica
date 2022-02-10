@@ -1,5 +1,5 @@
-import { GenericSchema } from '../..';
-import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../Schemas";
+import { GenericSchema } from '../../..';
+import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../../Schemas";
 
 
 const checkStringEncoding = (function(

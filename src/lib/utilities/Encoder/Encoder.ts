@@ -1,6 +1,6 @@
-import { StringSchema } from './../Schemas/_StringSchema';
+import { StringSchema } from '../../Schemas';
 import Validator from "../Validator/Validator";
-import { BooleanSchema, GenericSchema, NumberSchema, ObjectSchema, SchemaType } from "../..";
+import { BooleanSchema, GenericSchema, NumberSchema, ObjectSchema } from "../../Schemas";
 import ERR_INVALID_DATA from './errors/ERR_INVALID_DATA';
 //@ts-expect-error
 import flatstr from "flatstr"
@@ -21,7 +21,7 @@ export default class Encoder {
     }
     buildJson(object: any, schema: ObjectSchema) {
         if (schema.additionalProperties) {
-            return JSON.stringify(schema);
+            return JSON.stringify(object);
         }
         let json = "{";
         schema.properties.forEach((value, key) => {

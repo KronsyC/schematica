@@ -3,8 +3,6 @@
  * A Schema Can be used for data validation
  */
 
-
-
 export default class Parser{
     
 }

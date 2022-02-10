@@ -1,64 +1,32 @@
-import JSONworks from "./JSONworks";
-const jw = new JSONworks()
+import Schematica from "./Schematica";
+const json = new Schematica()
 
-const userSchema = jw.addSchema({
+
+const userSchema = json.createSchema({
     type: "object",
-    name:"user",
-    required: ["username", "email", "password", "age"], // Validators check if all of these properties are present
+    required: ["username", "password", "age"],
     properties: {
-        username: {
-            type: "string",
-            minLength: 3, // String minLength and maxLength values are inclusive
-            maxLength: 42
-        },
-        email: {
-            type: "string",
-            match: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ // Strings are able to use regex
-        },
-        password: {
-            type: "string",
-            minLength: 6,
-            maxLength: 72
-        },
-        age: {
-            type: "number",
-            min: 18 
-        }
-    }
-})
+        username: "string",
+        password: "string",
+        age: "number",
 
-const messageSchema = jw.createSchema({
-    type: "object",
-    required: ["author", "id"],
-    properties: {
-        id: {
-            type: "number"
-        },
-        author: "$user"
-    }
-})
-
-const messageValidator = jw.buildValidator(messageSchema)
-
-console.log(messageValidator({
-    id: 1,
-    author: {
-        username: "Casey",
-        email: "casey@example.com",
-        password: "abc123",
-        age: 123
-    }
-}));
-
-console.log(JSON.stringify({
-    id: 1,
-    author: {
-        username: "John Doe",
-        email: "john@doe.com",
-        age: 27
     },
-    content: "Hello Everyone! My name is John Doe and I love cats"
+    additionalProperties: true
+})
+const userValidator = json.buildSerializer(userSchema)
+
+
+console.log(userValidator({
+    username: "Samir",
+    password: "abcd",
+    age: 13.6
+
 }));
+
+
+
+
+
 
 
 
