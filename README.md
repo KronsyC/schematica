@@ -1,5 +1,6 @@
-# Schematica
-### The fully featured JSON manipulation library
+<h1 align=center> Schematica</h1>
+
+<h3 align=center> The fully featured JSON manipulation library</h2>
 
 ## Features
 - Schema validation
