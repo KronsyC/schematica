@@ -29,8 +29,8 @@ export default class Schematica {
     [kParser]: Parser;
     constructor() {
         this[kValidator] = new Validator();
-        this[kEncoder] = new Encoder();
-        this[kParser] = new Parser();
+        this[kEncoder] = new Encoder({validator: this[kValidator]});
+        this[kParser] = new Parser({validator:   this[kValidator]});
     }
 
     /**
@@ -101,5 +101,9 @@ export default class Schematica {
 
     buildSerializer(schema: Schema): (data: unknown) => string {
         return this[kEncoder].build(schema);
+    }
+
+    buildParser(schema:Schema): any{
+        return this[kParser].build(schema)
     }
 }

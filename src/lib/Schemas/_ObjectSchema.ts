@@ -55,6 +55,8 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
                             break;
                         case "object":
                             this.properties.set(key, Presets.object) 
+                        case "any":
+                            this.properties.set(key, Presets.any)
                         default:
                             throw new Error("A Ref must follow the pattern $schemaName");
                     }

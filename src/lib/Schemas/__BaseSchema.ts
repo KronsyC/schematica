@@ -1,10 +1,12 @@
+//TYPEADDITION
 export type SchemaType =
     | "string"
     | "object"
     | "number"
     | "boolean"
     | "array"
-    | "null";
+    | "null"
+    | "any";
 export interface BaseSchemaTemplate{
     type: SchemaType;
     name?: string;

@@ -1,5 +1,5 @@
 import { GenericSchema } from '../../..';
-import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding } from "../../Schemas";
+import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding, AnySchema } from "../../Schemas";
 
 
 const checkStringEncoding = (function(
@@ -23,6 +23,18 @@ const checkStringEncoding = (function(
 })
 
 class ValidatorBuilder {
+    //TYPEADDITION
+    buildAnyValidator(schema:AnySchema){
+        const anyValidator = (function(data:unknown){
+            if(data){
+                return true
+            }
+            else{
+                return false
+            }
+        })
+        return anyValidator
+    }
     buildStringValidator(schema: StringSchema) {
         const stringValidator = (function (data: unknown) {
             if (typeof data === "string") {
@@ -132,10 +144,9 @@ class ValidatorBuilder {
     }
     build(schema: GenericSchema ): (data: unknown, shallow?:boolean) => boolean {
         let validator;
-
+        //TYPEADDITION
         switch (schema.constructor) {
-            case BooleanSchema:
-                
+            case BooleanSchema:          
                 validator = this.buildBooleanValidator(schema as BooleanSchema);
                 break;
             case NumberSchema:
@@ -147,6 +158,8 @@ class ValidatorBuilder {
             case StringSchema:
                 validator = this.buildStringValidator(schema as StringSchema);
                 break;
+            case AnySchema:
+                return this.buildAnyValidator(schema as AnySchema)
             default:
                 throw new Error("Invalid Schema Type");
         }
@@ -165,4 +178,5 @@ export default class Validator {
     build(schema: GenericSchema) {
         return this[kBuilder].build(schema);
     }
+    static default = new Validator()
 }
