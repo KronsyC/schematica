@@ -12,7 +12,7 @@
 ### Sample User Object Validation
 
 ```ts
-import Json from "schematica"
+const Json = require("schematica")
 
 const jw = new Json()
 
@@ -54,9 +54,9 @@ const example2 = {
     email: "casey@example.com",
 }
 
-console.log(userValidator(example3)) // false - age is required 
+console.log(userValidator(example2)) // false - age is required 
 
-const example2 = {
+const example3 = {
     username: "Casey",
     email: "casey@example.com",
     password: "password1",
