@@ -12,7 +12,7 @@
 ### Sample User Object Validation
 
 ```ts
-const Json = require("schematica")
+const Json = require("schematica").default
 
 const jw = new Json()
 
@@ -70,7 +70,7 @@ console.log(userValidator(example3)) // false - password is not defined in the s
 
 ```ts
 
-import Json from "schematica"
+const Json = require("schematica").default
 
 const jw = new Json()
 
