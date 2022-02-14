@@ -1,4 +1,4 @@
-import { StringSchema } from '../../Schemas';
+import { Presets, StringSchema } from '../../Schemas';
 import Validator from "../Validator/Validator";
 import { BooleanSchema, GenericSchema, NumberSchema, ObjectSchema } from "../../Schemas";
 import ERR_INVALID_DATA from './errors/ERR_INVALID_DATA';
@@ -19,24 +19,7 @@ export default class Encoder {
             ? (this.validator = opts.validator)
             : (this.validator = new Validator());
     }
-    buildJson(object: any, schema: ObjectSchema) {
-        if (schema.additionalProperties) {
-            return JSON.stringify(object);
-        }
-        let json = "{";
-        schema.properties.forEach((value, key) => {
-            const encoder = value.cache.get("serializer")
-            
-            const encode = object[key]
-            if(!encode && !schema.required.includes(key)){
-                return
-            }
-            const encoded = encoder(encode)
-            json+=`"${key}":${encoded},`
-            // json+=`"${key}":${value.cache.get("serializer")(object[key])},` 
-        });
-        return json.slice(0, -1) + "}";
-    }
+
     getValidator(schema: GenericSchema): (data: unknown, shallow?:boolean) => boolean {
         let validator = schema.cache.get("validator");
         if (!validator) {
@@ -44,13 +27,53 @@ export default class Encoder {
         }
         return validator;
     }
+    buildTemplateString(schema:ObjectSchema){
+        let template = "{"
+        
+        schema.properties.forEach((value, key) => {
+            if(value instanceof ObjectSchema){
+                template+=this.buildTemplateString(value)
+            }
+            else{
+                template+=`${key}:&v.${key},`
+            }
+        })
 
+        template+="}"
+        return template
+        
+    }
     buildObjectEncoder(schema: ObjectSchema): (data: unknown) => string {
+        // const encoder = this.buildStringEncoder(Presets.string)
+        const buildJson = function(object: any, schema: ObjectSchema):string {
+        
+            if (schema.additionalProperties) {
+                // Optimizations do not work with addditional Properties
+                return JSON.stringify(object);
+            }
+            let json = "{";
+
+            schema.properties.forEach((value, key) =>{ 
+                const encoder = value.cache.get("serializer")
+                const toEncode = object[key]
+                if(!toEncode && !schema.required.includes(key)){
+                    // Value not present, but not required so it's fine
+                    return
+                }
+                else{
+                    const encoded = encoder(toEncode)
+                    json+=`"${key}":${encoded},`
+                }
+
+            })
+
+            return json.slice(0, -1) + "}";
+        }
         const objectEncoder = (data: unknown): string => {
             const isValid = validator(data, true)
             
-            if (typeof data === "object" && !!data && isValid) {       
-                let json = this.buildJson(data, schema);
+            if (typeof data === "object" && data && isValid) {       
+                let json = buildJson(data, schema)
                 return json;
             } else {
                 throw new ERR_INVALID_DATA()
@@ -58,11 +81,11 @@ export default class Encoder {
         };
         const validator = this.getValidator(schema);
         // Prebuild all encoders
-        schema.properties.forEach((p) => {
-            
-            p.cache.set("serializer", this.build(p));
-            
+        schema.properties.forEach((p) => {    
+            p.cache.set("serializer", this.build(p));           
         });
+        // build a template string
+        const templateString = this.buildTemplateString(schema)
         return objectEncoder;
     }
     buildBooleanEncoder(schema: BooleanSchema): (data: unknown) => string {

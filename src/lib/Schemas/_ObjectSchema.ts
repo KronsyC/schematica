@@ -70,5 +70,11 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
         this.validateSchema();
     }
 
-    override validateSchema(): void {}
+    override validateSchema(): void {
+        this.required.forEach(r=> {
+            if(!Array.from(this.properties.keys()).includes(r)){
+                throw new Error(`${r} is required but not defined by the schema`)
+            }
+        })
+    }
 }

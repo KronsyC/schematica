@@ -91,6 +91,7 @@ export default class Schematica {
         if (typeof arg === "string") {
             return this.buildValidator(this.getSchema(arg));
         } else if (arg instanceof BaseSchema) {
+            //@ts-ignore-error
             return this[kValidator].build(arg);
         } else {
             throw (new Error(

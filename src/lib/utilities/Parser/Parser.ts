@@ -31,7 +31,7 @@ export default class Parser{
         while(next.length>0){
             const nodes = next
             next =[]
-            for(let node of nodes){
+            nodes.forEach(node => {
                 
                 // Do not call hasOwnProperty Directly as it could possibly be poisoned
                 if(Object.hasOwnProperty.call(node, "__proto__")){
@@ -53,7 +53,7 @@ export default class Parser{
                     }
                 }
 
-            }
+            })
         }
     }
 
