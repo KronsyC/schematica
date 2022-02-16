@@ -4,7 +4,7 @@ import { BaseSchema } from "./lib/Schemas";
  * Responsible for managing caching as well as the other utilities
  */
 
-import Validator from "./lib/utilities/Validator/Validator";
+import Validator, { ValidatorOptions } from "./lib/utilities/Validator/Validator";
 import ERR_UNKNOWN_REF from "./errors/Schematica/ERR_UNKNOWN_REF";
 import Encoder from "./lib/utilities/Encoder/Encoder";
 import {
@@ -65,6 +65,7 @@ export default class Schematica {
      * @description Create a schema with the given template
      */
     createSchema(schema: SchemaTemplate): Schema {
+        
         const sch = newSchema(schema, this[kSchemaRefStore]);
         if (sch.name) {
             this[kSchemaRefStore].set(sch.name, sch);
@@ -85,14 +86,14 @@ export default class Schematica {
      * @param schema The Schema to create a validator for
      * @description Build a Validator function for the provided Schema
      */
-    buildValidator(schema: Schema): (data: unknown) => boolean;
-    buildValidator(ref: string): (data: unknown) => boolean;
-    buildValidator(arg: Schema | string): (data: unknown) => boolean {
+    buildValidator(schema: Schema, options?:ValidatorOptions): (data: unknown) => boolean;
+    buildValidator(ref: string, options?:ValidatorOptions): (data: unknown) => boolean;
+    buildValidator(arg: Schema | string, options?:ValidatorOptions): (data: unknown) => boolean {
         if (typeof arg === "string") {
-            return this.buildValidator(this.getSchema(arg));
+            return this.buildValidator(this.getSchema(arg), options);
         } else if (arg instanceof BaseSchema) {
             //@ts-ignore-error
-            return this[kValidator].build(arg);
+            return this[kValidator].build(arg, options);
         } else {
             throw (new Error(
                 "The Argument passed to buildValidator was not a string or Schema"

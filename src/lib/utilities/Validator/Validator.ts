@@ -1,28 +1,10 @@
 import { GenericSchema } from '../../..';
-import {  BooleanSchema, NumberSchema, ObjectSchema, StringSchema, TextEncoding, AnySchema } from "../../Schemas";
 import ValidatorBuilder from './ValidatorBuilder';
 
 
-const checkStringEncoding = (function(
-    text: string,
-    encoding: TextEncoding
-): boolean {
-    switch (encoding) {
-        case "utf8":
-        case "ascii":
-            // 128 total character values
-            for (let char of text) {
-                if (char.charCodeAt(0) > 127) {
-                    return false;
-                }
-            }
-            break;
-        case "unicode":
-            return true // I know this is terrible and may fail, but it's optimized TODO: Make this actually check
-    }
-    return true;
-})
-
+export interface ValidatorOptions{
+    errors?: boolean
+}
 
 const kBuilder = Symbol("Validator Builder");
 export default class Validator {
@@ -31,8 +13,25 @@ export default class Validator {
         this[kBuilder] = new ValidatorBuilder();
     }
 
-    build(schema: GenericSchema) {
-        return this[kBuilder].buildValidator(schema)
+    build(schema: GenericSchema, options:ValidatorOptions={}) {
+        const error = options.errors || false;
+        const validator = this[kBuilder].buildValidator(schema)
+        console.log(validator.toString());
+        
+        if(error){
+            return validator
+        }
+        else{
+            // Create a wrapper around the function that returns false instead of an error
+            return function(data:unknown){
+                try{
+                    return validator(data)
+                }
+                catch{
+                    return false;
+                }
+            }
+        }
     }
     static default = new Validator()
 }

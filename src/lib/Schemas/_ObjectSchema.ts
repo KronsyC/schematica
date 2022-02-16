@@ -9,14 +9,14 @@ import {Presets} from ".";
 
 export interface ObjectSchemaTemplate extends BaseSchemaTemplate {
     type: "object";
-    additionalProperties?: boolean;
+    strict?: boolean;
     required?: string[];
     properties?: { [x: string]: GenericSchemaTemplate | SchemaType | string };
 }
 
 
 export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
-    additionalProperties: boolean;
+    strict:boolean;
     required: string[];
     properties: Map<string, GenericSchema> = new Map();
     constructor(
@@ -24,7 +24,7 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
         schemaRefStore: Map<string, GenericSchema>
     ) {
         super(template);
-        this.additionalProperties = template.additionalProperties || false;
+        this.strict = template.strict || false;
         this.required = template.required || [];
 
         // Convert template properties into actual Schemas

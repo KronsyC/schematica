@@ -1,46 +1,50 @@
+import extractSourceFromFn from '../helpers/extractSourceFromFn';
 import { GenericSchema, BooleanSchema, NumberSchema, StringSchema, AnySchema, ObjectSchema } from './../../Schemas';
-function prettyPrint(fn:Function) {
-    let formattedSource = fn.toString()
-  
-    // Add line breaks after curly braces and semicolons
-    formattedSource = formattedSource.replace(/([{};])/g, "$1\n");
-  
-    // Add space after opening curly brace
-    formattedSource = formattedSource.replace(/(\S)\{/g, "$1 {");
-  
-    // Indent lines ending with a semicolon
-    formattedSource = formattedSource.replace(/^(.*?);/gm, "    $1;");
-  
-    return formattedSource;
-  }
 
 // All Functions should be embeddable
 export default class ValidatorBuilder{
-    buildStringValidator(schema:StringSchema, varname:string){
-        const fn = new Function(varname, `
-        if(typeof ${varname} === "string"){
-            ${schema.maxLength<Number.MAX_SAFE_INTEGER ?`if(${varname}.length > ${schema.maxLength}){return false;}`:""}
-            ${schema.minLength>0 ? `if(${varname}.length < ${schema.minLength}){return false;}`:""}
-            ${schema.match?`if (${schema.match}.test(data)){return true;}else{return false;}`:""}
-            return true
+    getValidator(schema:GenericSchema){
+        let vld = schema.cache.get("validator")
+        if(vld){
+            return vld
         }
         else{
-            return false
+            return this.buildValidator(schema)
         }
-    `)        
-    
-    return fn;
     }
-    buildNumberValidator(schema:NumberSchema, varname:string){
+
+    // finished
+    buildStringValidator(schema:StringSchema, varname:string){     
+        const fnSrc =  `
+        if(typeof ${varname} !== "string"){
+            throw new Error(\`Data must be of type "string", but was found to be of type \${typeof ${varname}}\`);
+        }
+        ${schema.maxLength<Number.MAX_SAFE_INTEGER ?`if(${varname}.length > ${schema.maxLength}){
+            throw new Error(\`Data may not contain over ${schema.maxLength} characters, but was found to have \${${varname}.length}\`);
+
+        }`:""
+        }
+        ${schema.minLength>0 ? `if(${varname}.length < ${schema.minLength}){
+            throw new Error(\`Data must contain at least ${schema.minLength} characters, but was found to have \${${varname}.length}\`);
+        }`:""}
+        return true;
+    `    
+    const fn = new Function(varname, fnSrc);
+    return fn
+    }
+    buildNumberValidator(schema:NumberSchema, _varname:string){
+        const varname = _varname
         const fn = new Function(varname, `
-        if(typeof ${varname} === "number"){
-            ${schema.max<Number.MAX_SAFE_INTEGER? `if(${varname}>${schema.max}){return false;}`:""}
-            ${schema.min>Number.MIN_SAFE_INTEGER? `if(${varname}<${schema.min}){return false;}`:""}
-            return true
+        if(typeof ${varname} !== "number"){
+            throw new Error(\`Data must be of type "number", but was found to be of type \${typeof ${varname}}\`);
         }
-        else{
-            return false
-        }
+        ${schema.max<Number.MAX_SAFE_INTEGER? `if(${varname}>${schema.max}){
+            throw new Error(\`Data may be a max of ${schema.max}, but was found to be \${${varname}}\`);
+        }`:""}
+        ${schema.min>Number.MIN_SAFE_INTEGER? `if(${varname}<${schema.min}){
+            throw new Error(\`Data may be a minimum of ${schema.min}, but was found to be \${${varname}}\`);
+        }`:""}
+        return true
         `)
         
         return fn;
@@ -48,80 +52,87 @@ export default class ValidatorBuilder{
     buildBooleanValidator(schema:BooleanSchema, varname:string){
         // Boolean validators are extremely dumb for the time being
         const fn = new Function(varname, `
-        if(typeof ${varname} === "boolean"){
-            return true
+        if(typeof ${varname} !== "boolean"){
+            throw new Error(\`Data must be of type "boolean", but was found to be of type \${typeof ${varname}}\`);
         }
-        else{
-            return false
-        }
+        return true
         `)
         return fn
     }
     buildAnyValidator(schema:AnySchema, varname:string){
         const fn = new Function(varname, `
-        if(${varname}){
-            return true
+        if(!${varname}){
+            throw new Error(\`Data must be present, but a falsy value was provided\`);
+
         }
-        else{
-            return false
-        }
+        return true
         `)
         return fn
     }
-
     buildObjectValidator(schema:ObjectSchema, varname:string){
         const buildChildValidators = () => {
             let code = ""
             schema.properties.forEach((value, key) => {
-                const childValidator = this.buildValidator(value, key)
+                const name = value.name
+                const childValidator = this.getValidator(value)
+                let sourceCode = extractSourceFromFn(childValidator);
 
-                // Clean up the function to only include source code
-                let sourceCode = childValidator.toString().replace(`function anonymous(${key}\n) {\n\n`, "").slice(0, -1)
                 // Replace return true so it doesnt't cause early termination
                 sourceCode = sourceCode.replace("return true", "")
-                code += `\nconst ${key} = ${varname}.${key};`
+                // Makes error messages work better
+                .replace("Data", key)
+                
+                code += `\nconst ${name} = ${varname}.${key};`
                 // If it is marked as required
                 if(schema.required.includes(key)){
                     code+=sourceCode
-                    code+=`delete ${varname}.${key};`
+
                 }
                 else{
                     code+=`
-                    if(${key}){
+                    if(${name}){
                         ${sourceCode}
-                        delete ${varname}.${key};
-
                     }
                     `
                 }
             })
             return code
         }
-        const additionalPropertiesCheck = () => {
-            
+        
+        const genKeyCheck = (name:string) => {
             let code = ""
-            if(schema.additionalProperties){
-
+            for(let [key, value] of schema.properties){
+                code+=`${name} === "${key}"||`
             }
-            else{
+            code = code.slice(0, -2)
+            
+            return code
+        }
+        const strictCheck = () => {
+            let code = ""
+            if(schema.strict){
                 code+=`
-                if(Object.keys(${varname}).length > 0){
-                    return false
+                for(let key in ${varname}){
+                    if(!(${genKeyCheck("key")})){
+                        throw new Error(\`Key \${key} is not allowed\`);
+                    }
                 }
                 `
+            }
+            else{ 
             }
             
             return code
         }
         let fnSource = `
-        if(typeof ${varname} === "object"){
-            ${buildChildValidators()}
-            ${additionalPropertiesCheck()}
-            return true
+        if(!(${varname}&&typeof ${varname} === "object"&&!Array.isArray(${varname}))){
+            throw new Error(\`Data must be of type "object", but was found to be of type \${typeof ${varname}}\`);
+
+
         }
-        else{
-            return false
-        }
+        ${strictCheck()}
+        ${buildChildValidators()}
+        return true
         `
         //#region formatter This currently breaks with for(i=0;i<num;i++) style loops but i'm too lazy to fix it
         fnSource = fnSource.
@@ -156,25 +167,38 @@ export default class ValidatorBuilder{
         }
         fnSource = tmpSrc
         //#endregion formatter
-
+                
         const fn = new Function(varname, fnSource)
         
         return fn
     }
-    buildValidator(schema:GenericSchema, varname:string="data"): Function{
+    buildValidator(schema:GenericSchema, varname:string=schema.name): Function{
+        let validator:Function
+
         switch(schema.type){
             case "string":
-                return this.buildStringValidator(schema as StringSchema, varname)
+                validator = this.buildStringValidator(schema as StringSchema, varname);
+                break;
             case "number":
-                return this.buildNumberValidator(schema as NumberSchema, varname)
+                validator = this.buildNumberValidator(schema as NumberSchema, varname)
+                break;
+
             case "boolean":
-                return this.buildBooleanValidator(schema as BooleanSchema, varname)
+                validator = this.buildBooleanValidator(schema as BooleanSchema, varname)
+                break;
+
             case "any":
-                return this.buildAnyValidator(schema as AnySchema, varname)
+                validator = this.buildAnyValidator(schema as AnySchema, varname)
+                break;
+
             case "object":
-                return this.buildObjectValidator(schema as ObjectSchema, varname)
+                validator = this.buildObjectValidator(schema as ObjectSchema, varname)
+                break;
             default:
                 throw new Error(`Cannot build validator for type ${schema.type}}`)
         }
+        validator.prototype.name = "validator"
+        schema.cache.set("validator", validator)
+        return validator;
     }
 }

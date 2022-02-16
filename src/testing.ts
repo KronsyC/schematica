@@ -1,28 +1,24 @@
-import { Presets } from ".";
 import Schematica from "./Schematica";
 const json = new Schematica()
 
 const userSchema = json.createSchema({
     type: "object",
-    required: ["age", "name"],
+    required: ["name", "age"],
     properties: {
-        name: {
-            type: "string",
-            maxLength: 42,
-            minLength: 5
-        },
+        name: "string",
         age: {
             type: "number",
-            min: 18,
-            max: 100
+            min: 18
         }
-    }
-})
+    }});
 
-const validator = json.buildValidator(userSchema)
-// console.log(validator.toString());
+const validator = json.buildValidator(userSchema, {errors: false})
 
-const data = {name:"Samir", age: 18}
+
+const data = {
+    name: "Samir",
+    age: 18
+}
 
 
 

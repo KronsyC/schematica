@@ -6,7 +6,6 @@ export interface StringSchemaTemplate extends BaseSchemaTemplate{
     minLength?:number;
     maxLength?:number;
     encoding?:TextEncoding;
-    match?:RegExp;
 }
 export type TextEncoding = "ascii"|"utf8"|"unicode"
 
@@ -14,11 +13,10 @@ export class StringSchema extends BaseSchema<StringSchemaTemplate>{
     minLength:number;
     maxLength:number;
     encoding:TextEncoding;
-    match?:RegExp;
     constructor(template:StringSchemaTemplate){
         super(template)
         this.encoding=template.encoding||"unicode" // Unicode is fastest to validate
-        this.match=template.match||undefined
+        // this.match=template.match?`/${template.match.source}/`:undefined
         this.minLength = template.minLength||0
         // Nobody will ever realistically exceed this number
         this.maxLength = template.maxLength||Number.MAX_SAFE_INTEGER
