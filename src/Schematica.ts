@@ -1,4 +1,5 @@
-import { BaseSchema } from "./lib/Schemas";
+import { StringSchemaTemplate } from './../dist/lib/Schemas/_StringSchema.d';
+import { AnySchema, AnySchemaTemplate, BaseSchema, BooleanSchema, BooleanSchemaTemplate, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema } from "./lib/Schemas";
 /**
  * This is the base class initialized by the user
  * Responsible for managing caching as well as the other utilities
@@ -19,6 +20,7 @@ const kParser =         Symbol("Parser");
 const kEncoder =        Symbol("Encoder");
 const kSchemaRefStore = Symbol("Schema Store");
 
+
 export default class Schematica {
     // Store the scemas with their refs
     [kSchemaRefStore]: Map<string, Schema> = new Map();
@@ -32,46 +34,12 @@ export default class Schematica {
         this[kEncoder] = new Encoder({validator: this[kValidator]});
         this[kParser] = new Parser({validator:   this[kValidator]});
     }
-
-    /**
-     *
-     * @param schema A schema strucure or a schema template
-     * @description Create a schema and saves it
-     */
-    addSchema(schema: Schema): Schema;
-    addSchema(template: SchemaTemplate): Schema;
-    addSchema(schema: Schema | SchemaTemplate): Schema {
-        // Instantiate a new Schema and return it
-        let sc: Schema;
-        if (schema instanceof BaseSchema) {
-            sc = schema;
-        } else {
-            sc = this.createSchema(schema);
-        }
-
-        if (sc.name) {
-            if (sc.name.includes(" ")) {
-                throw (new Error(
-                    "Schema names cannot contain whitespace"
-                ).name = "ERR_INVALID_SCHEMA_REF");
-            }
-            this[kSchemaRefStore].set(sc.name, sc);
-        }
-        return sc;
-    }
     /**
      *
      * @param schema The schema you want to create
      * @description Create a schema with the given template
      */
-    createSchema(schema: SchemaTemplate): Schema {
-        
-        const sch = newSchema(schema, this[kSchemaRefStore]);
-        if (sch.name) {
-            this[kSchemaRefStore].set(sch.name, sch);
-        }
-        return sch;
-    }
+
     getSchema(ref: string): Schema {
         const schema = this[kSchemaRefStore].get(ref);
         if (schema) {
@@ -101,8 +69,25 @@ export default class Schematica {
         }
     }
 
-    buildSerializer(schema: Schema): (data: unknown) => string {
+    buildSerializer(schema:AnySchema):(data:any)=>string
+    buildSerializer(schema:BooleanSchema):(data:boolean)=>string
+    buildSerializer(schema:NumberSchema):(data:number)=>string
+    buildSerializer(schema:ObjectSchema):(data:object)=>string
+    buildSerializer(schema:StringSchema):(data:string)=>string
+    buildSerializer(schema: Schema) {
         return this[kEncoder].build(schema);
+    }
+    createSchema(schema:AnySchemaTemplate):AnySchema
+    createSchema(schema:BooleanSchemaTemplate):BooleanSchema
+    createSchema(schema:ObjectSchemaTemplate):ObjectSchema
+    createSchema(schema:NumberSchemaTemplate):NumberSchema
+    createSchema(schema:StringSchemaTemplate):StringSchema
+    createSchema(schema: SchemaTemplate): Schema {
+        const sch = newSchema(schema, this[kSchemaRefStore]);
+        if (sch.name) {
+            this[kSchemaRefStore].set(sch.name, sch);
+        }
+        return sch;
     }
 
     buildParser(schema:Schema): any{

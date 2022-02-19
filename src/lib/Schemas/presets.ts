@@ -1,24 +1,22 @@
-import newSchema from ".";
+
+import newSchema, { AnySchema, BooleanSchema, NumberSchema, ObjectSchema, StringSchema } from ".";
 
 export class Presets{
-    static email = newSchema({
-        type: "string",
-    })
     //TYPEADDITION
-    static string = newSchema({
-        type: "string"
-    })
-    static number = newSchema({
-        type: "number"
-    })
-    static boolean = newSchema({
-        type: "boolean"
-    })
-    static object = newSchema({
-        type: "object",
-        strict: false
-    })
-    static any = newSchema({
-        type: "any"
-    })
+    // Use getters and instantiate presets, because pregenerated presets cause ID collisions
+    static get string(){
+        return new StringSchema({type: "string"})
+    }
+    static get number(){
+        return new NumberSchema({type: "number"})
+    }
+    static get boolean(){
+        return new BooleanSchema({type: "boolean"})
+    }
+    static get object(){
+        return new ObjectSchema({type: "object", strict: false}, new Map())
+    }
+    static get any(){
+        return new AnySchema({type: "any"})
+    }
 }

@@ -1,19 +1,9 @@
 import extractSourceFromFn from '../helpers/extractSourceFromFn';
+import getValidator from '../helpers/getValidator';
 import { GenericSchema, BooleanSchema, NumberSchema, StringSchema, AnySchema, ObjectSchema } from './../../Schemas';
 
 // All Functions should be embeddable
 export default class ValidatorBuilder{
-    getValidator(schema:GenericSchema){
-        let vld = schema.cache.get("validator")
-        if(vld){
-            return vld
-        }
-        else{
-            return this.buildValidator(schema)
-        }
-    }
-
-    // finished
     buildStringValidator(schema:StringSchema, varname:string){     
         const fnSrc =  `
         if(typeof ${varname} !== "string"){
@@ -74,13 +64,13 @@ export default class ValidatorBuilder{
             let code = ""
             schema.properties.forEach((value, key) => {
                 const name = value.name
-                const childValidator = this.getValidator(value)
+                const childValidator = getValidator(value, this)
                 let sourceCode = extractSourceFromFn(childValidator);
-
+                
                 // Replace return true so it doesnt't cause early termination
-                sourceCode = sourceCode.replace("return true", "")
-                // Makes error messages work better
-                .replace("Data", key)
+                sourceCode = sourceCode.replaceAll("return true", "")
+                // Make error messages more informative
+                .replaceAll("Data", key)
                 
                 code += `\nconst ${name} = ${varname}.${key};`
                 // If it is marked as required
@@ -133,46 +123,14 @@ export default class ValidatorBuilder{
         ${strictCheck()}
         ${buildChildValidators()}
         return true
-        `
-        //#region formatter This currently breaks with for(i=0;i<num;i++) style loops but i'm too lazy to fix it
-        fnSource = fnSource.
-        replaceAll("\n", "")
-        .replaceAll("}", "\n}\n")
-        .replaceAll("{", "{\n")
-        .replaceAll(";", "\n")
-        .replaceAll("  ", "")
-        .replaceAll("\n\n", "\n")
 
+        `
         
-        // Pass 2: Add indentation
-        let _indentations=0
-        let indentations = 0;
-        let tmpSrc = "";
-        let currentLine=""
-        for(let i = 0; i<fnSource.length;i++){
-            let char = fnSource.charAt(i)
-            currentLine+=char
-            if(char==="\n"){
-                tmpSrc+="  ".repeat(indentations)+currentLine
-                indentations=_indentations
-                currentLine=""
-            }
-            else if(char === "{"){
-                _indentations++
-            }
-            else if(char === "}"){
-                _indentations--
-                indentations--
-            }
-        }
-        fnSource = tmpSrc
-        //#endregion formatter
-                
         const fn = new Function(varname, fnSource)
         
         return fn
     }
-    buildValidator(schema:GenericSchema, varname:string=schema.name): Function{
+    build(schema:GenericSchema, varname:string=schema.name): Function{
         let validator:Function
 
         switch(schema.type){
@@ -197,7 +155,6 @@ export default class ValidatorBuilder{
             default:
                 throw new Error(`Cannot build validator for type ${schema.type}}`)
         }
-        validator.prototype.name = "validator"
         schema.cache.set("validator", validator)
         return validator;
     }

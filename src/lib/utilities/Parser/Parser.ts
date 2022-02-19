@@ -10,6 +10,7 @@ import { GenericSchema, StringSchema, NumberSchema } from '../../Schemas';
 
 import Validator from "../Validator/Validator";
 import { ERR_BAD_JSON } from './errors/ERR_BAD_JSON';
+import getValidator from '../helpers/getValidator';
 
 
 const protoPollutionRegex = /"(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])"\s*:/
@@ -32,7 +33,6 @@ export default class Parser{
             const nodes = next
             next =[]
             nodes.forEach(node => {
-                
                 // Do not call hasOwnProperty Directly as it could possibly be poisoned
                 if(Object.hasOwnProperty.call(node, "__proto__")){
                     //@ts-expect-error
@@ -57,12 +57,13 @@ export default class Parser{
         }
     }
 
+
     build(schema:GenericSchema){
         const parser = ((data:string, reviver?:( key:string, value:any )=>any) => {
             try{
                 // JSON.parse is safe, but it's better to clean it because users may use polluted data insecurely
-                const parsed = JSON.parse(data,reviver)
-
+                // const parsed = {name:"Samir",age:18, __proto__:null}
+                const parsed = JSON.parse(data)
                 if(validator(parsed)){
                     // Do some safety checking
 
@@ -71,17 +72,21 @@ export default class Parser{
                         return parsed
                     }
                     else{
-                        if(protoPollutionRegex.test(data) || constructorPolutionRegex.test(data)){
-                            // Scrub the data of all references to __proto__ and constructor
-                            this.scrub(parsed)
+                        // this.scrub(parsed)
+                        // if(protoPollutionRegex.test(data) || constructorPolutionRegex.test(data)){
+                        //     // Scrub the data of all references to __proto__ and constructor                            
+                        //     this.scrub(parsed)
                             
-                        }
+                        // }
                         // No suspected poisoning     
                         return parsed
 
                     }
                 }
-                else throw new ERR_INVALID_DATA("Data does not match parser schema")
+                else{
+                    
+                    throw new ERR_INVALID_DATA("Data does not match parser schema")
+                } 
             }
             catch(err){
                 if( err instanceof SyntaxError){
@@ -92,10 +97,7 @@ export default class Parser{
                 }
             }
         })
-        let validator = schema.cache.get("validator")
-        if(!validator){
-            validator = this.validator.build(schema)
-        }
+        let validator = getValidator(schema, this.validator.builder)
         return parser
     }
 }

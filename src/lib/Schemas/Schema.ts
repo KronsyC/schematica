@@ -6,8 +6,6 @@ import { AnySchema, AnySchemaTemplate } from './_AnySchema';
 import {
     BooleanSchema,
     BooleanSchemaTemplate,
-    NullSchema,
-    NullSchemaTemplate,
     NumberSchema,
     NumberSchemaTemplate,
     ObjectSchema,
@@ -22,7 +20,6 @@ export type GenericSchemaTemplate =
     | BooleanSchemaTemplate
     | ObjectSchemaTemplate
     | NumberSchemaTemplate
-    | NullSchemaTemplate
     | AnySchemaTemplate;
 
 export type GenericSchema =
@@ -30,7 +27,6 @@ export type GenericSchema =
     | BooleanSchema
     | ObjectSchema
     | NumberSchema
-    | NullSchema
     | AnySchema;
 export default function createSchema(
     constructor: GenericSchemaTemplate,
@@ -48,8 +44,6 @@ export default function createSchema(
             return new NumberSchema(constructor);
         case "object":
             return new ObjectSchema(constructor, schemaRefStore);
-        case "null":
-            return new NullSchema(constructor);
 
         default:
             throw new Error("Could not find schema for template");

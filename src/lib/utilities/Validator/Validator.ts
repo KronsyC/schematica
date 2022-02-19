@@ -8,15 +8,20 @@ export interface ValidatorOptions{
 
 const kBuilder = Symbol("Validator Builder");
 export default class Validator {
-    [kBuilder]: ValidatorBuilder;
+    builder: ValidatorBuilder;
     constructor() {
-        this[kBuilder] = new ValidatorBuilder();
+        this.builder = new ValidatorBuilder();
     }
 
+
     build(schema: GenericSchema, options:ValidatorOptions={}) {
+        // This function should only be invoked by the user, for any internal purposes use the builder directly and cache under a different key
+
+
         const error = options.errors || false;
-        const validator = this[kBuilder].buildValidator(schema)
-        console.log(validator.toString());
+
+        
+        const validator = this.builder.build(schema)
         
         if(error){
             return validator

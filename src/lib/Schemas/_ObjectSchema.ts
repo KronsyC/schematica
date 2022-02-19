@@ -35,13 +35,13 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
                     const schemaName = value.slice(1);
                     const sch = schemaRefStore.get(schemaName);
                     if (sch) {
+                        
                         this.properties.set(key, sch);
                     } else {
                         throw new ERR_UNKNOWN_REF();
                     }
                 } else if (typeof value === "string") {
                     // TODO: Create a Generic Version of the type's schema
-                    
                     switch(value){
                         //TYPEADDITION
                         case "string":
@@ -60,6 +60,8 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
                         default:
                             throw new Error("A Ref must follow the pattern $schemaName");
                     }
+
+
 
                 } else {
                     this.properties.set(key, newSchema(value));

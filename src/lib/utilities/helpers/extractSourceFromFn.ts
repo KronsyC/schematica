@@ -8,6 +8,8 @@ export default function extractSourceFromFn(func: Function){
     let source = func.toString()
     
     // Megamind level shit 
-    source= source.split("\n").slice(2, -1).join("\n")
-    return source
+    const endOfSignature = source.indexOf(") {")+3
+    
+    
+    return source.slice(endOfSignature, -1)
 }
