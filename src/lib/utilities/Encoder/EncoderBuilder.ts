@@ -4,47 +4,53 @@ import { NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
 import getValidator from "../helpers/getValidator"
 import objectEncoder from "./objectEncoder";
 import extractSourceFromFn from '../helpers/extractSourceFromFn';
-
-function escaped(char:string){
+const h_escaped = `
+function escaped(char){
     switch(char){
         case '"':
             return '\\"'
-        case "\b":
+        case "\\b":
             return "\\b"
-        case "\\":
-            return "\\\\"
-        case "\f":
-            return "\\f"
-        case "\n":
-            return "\\n"
-        case "\r":
-            return "\\r"
-        case "\h":
-            return "\\h"
+        case "\\\\":
+            return "\\\\\\\\"
+        case "\\f":
+            return "\\\\f"
+        case "\\n":
+            return "\\\\n"
+        case "\\r":
+            return "\\\\r"
         default:
-            throw new Error(`Could not find escaped version for character ${char}`)
+            throw new Error(\`Could not find escaped version for character \${char}\`)
     }
 }
+`
+const h_strEnc = `
+`
 
+/**
+ * IF A VALIDATOR IS A CHILD VALIDATOR
+ * IT EXPECTS IT'S PARENT TO PROVIDE ALL OF IT'S DEPENDENCIES AND VALIDATE FOR IT
+ */
+/**
+ * 
+ */
 export default class EncoderBuilder{
     private validator:Validator;
     constructor(validator:Validator){
         this.validator = validator
     }
-    buildStringEncoder(schema: StringSchema): (data: string) => string {
+    buildStringEncoder(schema: StringSchema, isChild=false): (data: string) => string {
         const validator = getValidator(schema, this.validator.builder)
         //@ts-expect-error
-        return new Function(schema.name, `
-        function escaped(char){
-            ${extractSourceFromFn(escaped)}
-        }
+        return new Function(schema.id, `
+        ${!isChild ? h_escaped : ""}
         try{
-            let data = ${schema.name}
-            ${extractSourceFromFn(validator).replace("return true;", "")}
+            let data = ${schema.id}
+            ${!isChild ? extractSourceFromFn(validator).replace("return true;", ""):""}
             let i=data.length-1;
             while(i>-1){
                 const char = data[i]   
-                if(char==='"'|| char==="\\b" || char==="\\\\" || char==="\\f" || char==="\\n" || char==="\\r" || char==="\\h" ){                        
+                if(char==='"'|| char==="\\b" || char==="\\\\" || char==="\\f" || char==="\\n" || char==="\\r" ){                        
                     data = data.slice(0, i) + escaped(char) + data.slice(i+1)
                     i--   
                 }
@@ -57,39 +63,39 @@ export default class EncoderBuilder{
         }
         `)
     }
-    buildNumberEncoder(schema: NumberSchema): (data: number) => string {
+    buildNumberEncoder(schema: NumberSchema, isChild=false): (data: number) => string {
         const validator = getValidator(schema, this.validator.builder)
         //@ts-expect-error
-        return new Function(schema.name, `
-            ${extractSourceFromFn(validator).replace("return true", "")}
-            const num = Number(${schema.name})
+        return new Function(schema.id, `
+            ${!isChild ? extractSourceFromFn(validator).replace("return true", "") : ""}
+            const num = Number(${schema.id})
             return ''+num
         `)
     }
-    buildBooleanEncoder(schema:BooleanSchema):(data:boolean)=>string {
+    buildBooleanEncoder(schema:BooleanSchema, isChild=false):(data:boolean)=>string {
         const validator= getValidator(schema, this.validator.builder);
         //@ts-expect-error
-        return new Function(schema.name, `
-            ${extractSourceFromFn(validator).replace("return true;", "")}
-            return ${schema.name} ? "true" : "false"
+        return new Function(schema.id, `
+            ${!isChild?extractSourceFromFn(validator).replace("return true;", ""):""}
+            return ${schema.id} ? "true" : "false"
         `)
     }
-    buildObjectEncoder(schema: ObjectSchema): (data: object) => string {
-        return objectEncoder(schema, this.validator.builder, this)
+    buildObjectEncoder(schema: ObjectSchema, isChild=false): (data: object) => string {
+        return objectEncoder(schema, this.validator.builder, this, isChild)
     }
 
 
-    buildEncoder(schema:GenericSchema){
+    buildEncoder(schema:GenericSchema, isChild=false){
         switch(schema.type){
             case "string":
-                return this.buildStringEncoder(schema as StringSchema);
+                return this.buildStringEncoder(schema as StringSchema, isChild);
             case "number":
                 
-                return this.buildNumberEncoder(schema as NumberSchema);
+                return this.buildNumberEncoder(schema as NumberSchema, isChild);
             case "boolean":
-                return this.buildBooleanEncoder(schema as BooleanSchema);
+                return this.buildBooleanEncoder(schema as BooleanSchema, isChild);
             case "object":
-                return this.buildObjectEncoder(schema as ObjectSchema)
+                return this.buildObjectEncoder(schema as ObjectSchema, isChild)
             default:
                 throw new Error(`No encoder support for type ${schema.type}}`)
         }

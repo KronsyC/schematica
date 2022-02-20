@@ -35,7 +35,6 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
                     const schemaName = value.slice(1);
                     const sch = schemaRefStore.get(schemaName);
                     if (sch) {
-                        
                         this.properties.set(key, sch);
                     } else {
                         throw new ERR_UNKNOWN_REF();

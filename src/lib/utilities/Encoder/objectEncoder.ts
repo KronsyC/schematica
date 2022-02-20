@@ -3,25 +3,25 @@ import getValidator from '../helpers/getValidator';
 import ValidatorBuilder from '../Validator/ValidatorBuilder';
 import { ObjectSchema } from './../../Schemas';
 import EncoderBuilder from './EncoderBuilder';
-export default function objectEncoder(schema:ObjectSchema, validatorBuilder:ValidatorBuilder, encoderBuilder:EncoderBuilder) : (data:unknown)=>string{
+export default function objectEncoder(schema:ObjectSchema, validatorBuilder:ValidatorBuilder, encoderBuilder:EncoderBuilder, isChild:boolean = false) : (data:unknown)=>string{
     function propertyEncoders(){
         let code = ""
         let first = true
         for(let [name, sch] of schema.properties){
-            const encoder = encoderBuilder.buildEncoder(sch)
+            const encoder = encoderBuilder.buildEncoder(sch, true)            
             code+=`
-            function ${sch.name}_encoder(${sch.name}){
+            function ${sch.id}_encoder(${sch.id}){
                 ${extractSourceFromFn(encoder)}
             }`
             if(schema.required.includes(name)){
                 // Template literals are faster than concatenation for whatever reason
                 code+=`
-                encoded+=\`${!first?",":""}"${name}":\${${sch.name}_encoder(${schema.name}.${name})}\`;`
+                encoded+=\`${!first?",":""}"${name}":\${${sch.id}_encoder(${schema.id}["${name}"])}\`;`
             }
             else{
                 code+=`
-                if(${schema.name}.${name}){
-                    encoded+=\`${!first?",":""}"${name}":\${${sch.name}_encoder(${schema.name}.${name})}\`;
+                if(${schema.id}["${name}"]){
+                    encoded+=\`${!first?",":""}"${name}":\${${sch.id}_encoder(${schema.id}["${name}"])}\`;
                 }
                 `
             }
@@ -45,13 +45,13 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     }
     function unknownPropertyEncoders(){
         let code = `
-        Object.keys(${schema.name}).forEach(key=> {
+        Object.keys(${schema.id}).forEach(key=> {
             if(!(${isProperty("key")})){
                 if(encoded.endsWith(",")){
-                    encoded+=JSON.stringify(${schema.name}[key])
+                    encoded+=JSON.stringify(${schema.id}[key])
                 }
                 else{
-                    encoded+=","+'"'+key+'"'+":"+JSON.stringify(${schema.name}[key])
+                    encoded+=","+'"'+key+'"'+":"+JSON.stringify(${schema.id}[key])
                 }
             }
         })
@@ -62,8 +62,8 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     // If the schema is strict, construct a highly optimized encoder function
     const validatorSrc = extractSourceFromFn(validator)
     if(schema.strict){
-        const fn = new Function(schema.name, `
-            ${validatorSrc.replace("return true", "") }
+        const fn = new Function(schema.id, `
+            ${!isChild ? validatorSrc.replace("return true", "") : "" }
             let encoded="{";
             ${propertyEncoders()}
             encoded+="}";
@@ -75,8 +75,8 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     }
     // Otherwise, do the same thing but use JSON.stringify for properties not defined within the schema
     else{
-        const fn = new Function(schema.name, `
-        ${validatorSrc.replace("return true", "") }
+        const fn = new Function(schema.id, `
+        ${!isChild ? validatorSrc.replace("return true", "") : "" }
         let encoded="{";
         ${propertyEncoders()}
         ${unknownPropertyEncoders()}
@@ -87,6 +87,5 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     //@ts-expect-error        
     return fn
     }
-    return (data:unknown)=>"NAN"
 }
 

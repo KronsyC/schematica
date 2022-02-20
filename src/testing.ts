@@ -1,11 +1,26 @@
+import { AsyncLocalStorage } from "async_hooks";
 import Schematica from "./Schematica";
 const json = new Schematica()
 
+const countrySchema = json.createSchema({
+    type: "object",
+    name: "country",
+    required: ["shorthand", "name", "dialCode", "language"],
+    properties: {
+        shorthand: "string",
+        name: "string",
+        language: "string",
+        dialCode: "string",
+    },
+    strict: true
+})
+
 const userSchema = json.createSchema({
     type: "object",
-    required: ["name", "age", "email"],
+    name: "user",
+    required: ["first name", "age", "email"],
     properties: {
-        name: {
+        "first name": {
             type: "string"
         },
         age: {
@@ -13,33 +28,52 @@ const userSchema = json.createSchema({
         },
         email: {
             type: "string",
-        }
+        },
+        country: "$country"
     },
-    strict: false
+    strict: true
 });
 
-const encoder = json.buildSerializer(userSchema)
 
+const encoder = json.buildSerializer(userSchema)
+const countryEncoder = json.buildSerializer(countrySchema)
 
 const data = {
-    name: "Samir",
+    "first name": "Samir",
     age: 18,
-    email: "Hello@World.com",
-    peepee: "poopoo"
+    email: "hello@world.com",
+    country: {
+        shorthand: "IRL",
+        name: "Ireland",
+        language: "Irish",
+        dialCode: "+353"
+    }
+}
+const data2 = {
+    shorthand: "IRL",
+    name: "Ireland",
+    language: "Irish",
+    dialCode: "+353"
 }
 
 
-const iterations = 10000000
+const iterations = 1000000
 
 
-console.log(encoder.toString());
 
 let before = process.hrtime()
 for(let i = 0; i<iterations;i++){
     encoder(data)
 }
 let diff = process.hrtime(before)
-console.log("Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")
+console.log("User Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")
+
+before = process.hrtime()
+for(let i = 0; i<iterations;i++){
+    countryEncoder(data2)
+}
+diff = process.hrtime(before)
+console.log("Country Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")
 
 // before = process.hrtime()
 // for(let i = 0; i<iterations;i++){

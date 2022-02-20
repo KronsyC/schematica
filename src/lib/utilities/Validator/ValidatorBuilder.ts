@@ -63,7 +63,7 @@ export default class ValidatorBuilder{
         const buildChildValidators = () => {
             let code = ""
             schema.properties.forEach((value, key) => {
-                const name = value.name
+                const name = value.id
                 const childValidator = getValidator(value, this)
                 let sourceCode = extractSourceFromFn(childValidator);
                 
@@ -72,7 +72,7 @@ export default class ValidatorBuilder{
                 // Make error messages more informative
                 .replaceAll("Data", key)
                 
-                code += `\nconst ${name} = ${varname}.${key};`
+                code += `\nconst ${name} = ${varname}["${key}"];`
                 // If it is marked as required
                 if(schema.required.includes(key)){
                     code+=sourceCode
@@ -117,8 +117,6 @@ export default class ValidatorBuilder{
         let fnSource = `
         if(!(${varname}&&typeof ${varname} === "object"&&!Array.isArray(${varname}))){
             throw new Error(\`Data must be of type "object", but was found to be of type \${typeof ${varname}}\`);
-
-
         }
         ${strictCheck()}
         ${buildChildValidators()}
@@ -130,7 +128,7 @@ export default class ValidatorBuilder{
         
         return fn
     }
-    build(schema:GenericSchema, varname:string=schema.name): Function{
+    build(schema:GenericSchema, varname:string=schema.id): Function{
         let validator:Function
 
         switch(schema.type){
