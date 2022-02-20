@@ -2,7 +2,7 @@ import extractSourceFromFn from '../helpers/extractSourceFromFn';
 import getValidator from '../helpers/getValidator';
 import ValidatorBuilder from '../Validator/ValidatorBuilder';
 import { ObjectSchema } from './../../Schemas';
-import EncoderBuilder from './EncoderBuilder';
+import EncoderBuilder, { codeGenDeps } from './EncoderBuilder';
 export default function objectEncoder(schema:ObjectSchema, validatorBuilder:ValidatorBuilder, encoderBuilder:EncoderBuilder, isChild:boolean = false) : (data:unknown)=>string{
     function propertyEncoders(){
         let code = ""
@@ -63,6 +63,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     const validatorSrc = extractSourceFromFn(validator)
     if(schema.strict){
         const fn = new Function(schema.id, `
+            ${!isChild ? codeGenDeps : ""}
             ${!isChild ? validatorSrc.replace("return true", "") : "" }
             let encoded="{";
             ${propertyEncoders()}
@@ -70,7 +71,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
             return encoded;
         `)
 
-        //@ts-expect-error        
+        //@ts-expect-error
         return fn
     }
     // Otherwise, do the same thing but use JSON.stringify for properties not defined within the schema
@@ -84,7 +85,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
         return encoded;
     `)
 
-    //@ts-expect-error        
+    //@ts-expect-error
     return fn
     }
 }

@@ -4,8 +4,9 @@ import { NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
 import getValidator from "../helpers/getValidator"
 import objectEncoder from "./objectEncoder";
 import extractSourceFromFn from '../helpers/extractSourceFromFn';
-const h_escaped = `
-function escaped(char){
+
+export const codeGenDeps = `
+function $escaped(char){
     switch(char){
         case '"':
             return '\\"'
@@ -23,8 +24,24 @@ function escaped(char){
             throw new Error(\`Could not find escaped version for character \${char}\`)
     }
 }
-`
-const h_strEnc = `
+function $encodeStr(_data){
+    try{
+        let data = _data
+        let i=data.length-1;
+        while(i>-1){
+            const char = data[i]   
+            if(char==='"'|| char==="\\b" || char==="\\\\" || char==="\\f" || char==="\\n" || char==="\\r" ){                        
+                data = data.slice(0, i) + $escaped(char) + data.slice(i+1)
+                i--   
+            }
+            i--
+        }
+        return '"' + data + '"'
+    }
+    catch(err){
+        throw err
+    }
+}
 `
 
 /**
@@ -41,9 +58,14 @@ export default class EncoderBuilder{
     }
     buildStringEncoder(schema: StringSchema, isChild=false): (data: string) => string {
         const validator = getValidator(schema, this.validator.builder)
+        if(isChild){
+            // Make a call to $encodeStr, because optimization babyyyy
+            //@ts-expect-error
+            return new Function(schema.id, `return $encodeStr(${schema.id})`)
+        }
         //@ts-expect-error
         return new Function(schema.id, `
-        ${!isChild ? h_escaped : ""}
+        ${!isChild ? codeGenDeps : ""}
         try{
             let data = ${schema.id}
             ${!isChild ? extractSourceFromFn(validator).replace("return true;", ""):""}
@@ -51,7 +73,7 @@ export default class EncoderBuilder{
             while(i>-1){
                 const char = data[i]   
                 if(char==='"'|| char==="\\b" || char==="\\\\" || char==="\\f" || char==="\\n" || char==="\\r" ){                        
-                    data = data.slice(0, i) + escaped(char) + data.slice(i+1)
+                    data = data.slice(0, i) + $escaped(char) + data.slice(i+1)
                     i--   
                 }
                 i--
@@ -90,7 +112,6 @@ export default class EncoderBuilder{
             case "string":
                 return this.buildStringEncoder(schema as StringSchema, isChild);
             case "number":
-                
                 return this.buildNumberEncoder(schema as NumberSchema, isChild);
             case "boolean":
                 return this.buildBooleanEncoder(schema as BooleanSchema, isChild);
