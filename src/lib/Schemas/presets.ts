@@ -1,5 +1,5 @@
 
-import newSchema, { AnySchema, BooleanSchema, NumberSchema, ObjectSchema, StringSchema } from ".";
+import newSchema, { AnySchema, ArraySchema, BooleanSchema, NumberSchema, ObjectSchema, StringSchema } from ".";
 
 export class Presets{
     //TYPEADDITION
@@ -15,6 +15,9 @@ export class Presets{
     }
     static get object(){
         return new ObjectSchema({type: "object", strict: false}, new Map())
+    }
+    static get array(){
+        return new ArraySchema({type: "array", strict: false, items: ["any"]}, new Map())
     }
     static get any(){
         return new AnySchema({type: "any"})

@@ -1,7 +1,7 @@
 
 import { BaseSchema, BaseSchemaTemplate } from "./__BaseSchema";
 import { GenericSchema, GenericSchemaTemplate } from "./Schema";
-import newSchema, { SchemaType } from ".";
+import newSchema, { getPresetByName, SchemaType } from ".";
 import ERR_UNKNOWN_REF from "../../errors/Schematica/ERR_UNKNOWN_REF";
 import {Presets} from ".";
 
@@ -41,29 +41,10 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
                     }
                 } else if (typeof value === "string") {
                     // TODO: Create a Generic Version of the type's schema
-                    switch(value){
-                        //TYPEADDITION
-                        case "string":
-                            this.properties.set(key, Presets.string)
-                            break;
-                        case "number":
-                            this.properties.set(key, Presets.number)
-                            break;
-                        case "boolean":
-                            this.properties.set(key, Presets.boolean)
-                            break;
-                        case "object":
-                            this.properties.set(key, Presets.object) 
-                        case "any":
-                            this.properties.set(key, Presets.any)
-                        default:
-                            throw new Error("A Ref must follow the pattern $schemaName");
-                    }
-
-
-
+                    const schema = getPresetByName(value)
+                    this.properties.set(key, schema)
                 } else {
-                    this.properties.set(key, newSchema(value));
+                    this.properties.set(key, newSchema(value, schemaRefStore));
                 }
             }
         }

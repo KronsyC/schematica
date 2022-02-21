@@ -1,15 +1,19 @@
-import { AnySchema, AnySchemaTemplate } from './_AnySchema';
 /**
  * Abstracts away the class constructors to a single function
  */
 
 import {
+    AnySchema,
+    AnySchemaTemplate,
+    ArraySchema,
+    ArraySchemaTemplate,
     BooleanSchema,
     BooleanSchemaTemplate,
     NumberSchema,
     NumberSchemaTemplate,
     ObjectSchema,
     ObjectSchemaTemplate,
+    Presets,
     StringSchema,
     StringSchemaTemplate,
 } from ".";
@@ -20,6 +24,7 @@ export type GenericSchemaTemplate =
     | BooleanSchemaTemplate
     | ObjectSchemaTemplate
     | NumberSchemaTemplate
+    | ArraySchemaTemplate
     | AnySchemaTemplate;
 
 export type GenericSchema =
@@ -27,6 +32,7 @@ export type GenericSchema =
     | BooleanSchema
     | ObjectSchema
     | NumberSchema
+    | ArraySchema
     | AnySchema;
 export default function createSchema(
     constructor: GenericSchemaTemplate,
@@ -44,8 +50,27 @@ export default function createSchema(
             return new NumberSchema(constructor);
         case "object":
             return new ObjectSchema(constructor, schemaRefStore);
-
+        case "array":
+            return new ArraySchema(constructor, schemaRefStore)
         default:
             throw new Error("Could not find schema for template");
+    }
+}
+export function getPresetByName(name:string){
+    switch(name){
+        //TYPEADDITION
+        case "string":
+            return Presets.string
+        case "number":
+            return Presets.number
+            break;
+        case "boolean":
+            return Presets.boolean
+        case "object":
+            return Presets.object
+        case "any":
+            return Presets.any
+        default:
+            throw new Error(`No preset found for type ${name}`);
     }
 }

@@ -34,7 +34,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     function isProperty(v:string){
         let code = ""
         let first=true;
-        for(let [key, value] of schema.properties){
+        for(let [key, _] of schema.properties){
             if(!first){
                 code+="||"
             }

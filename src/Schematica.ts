@@ -1,5 +1,5 @@
-import { StringSchemaTemplate } from './../dist/lib/Schemas/_StringSchema.d';
-import { AnySchema, AnySchemaTemplate, BaseSchema, BooleanSchema, BooleanSchemaTemplate, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema } from "./lib/Schemas";
+
+import { AnySchema, AnySchemaTemplate, ArraySchema, ArraySchemaTemplate, BaseSchema, BooleanSchema, BooleanSchemaTemplate, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema, StringSchemaTemplate } from "./lib/Schemas";
 /**
  * This is the base class initialized by the user
  * Responsible for managing caching as well as the other utilities
@@ -82,6 +82,7 @@ export default class Schematica {
     createSchema(schema:ObjectSchemaTemplate):ObjectSchema
     createSchema(schema:NumberSchemaTemplate):NumberSchema
     createSchema(schema:StringSchemaTemplate):StringSchema
+    createSchema(schema:ArraySchemaTemplate):ArraySchema
     createSchema(schema: SchemaTemplate): Schema {
         const sch = newSchema(schema, this[kSchemaRefStore]);
         if (sch.name) {

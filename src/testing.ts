@@ -1,60 +1,48 @@
-import { AsyncLocalStorage } from "async_hooks";
 import Schematica from "./Schematica";
 const json = new Schematica()
 
-const countrySchema = json.createSchema({
-    type: "object",
-    name: "country",
-    required: ["shorthand", "name", "dialCode", "language"],
-    properties: {
-        shorthand: "string",
-        name: "string",
-        language: "string",
-        dialCode: "string",
-    },
-    strict: true
-})
 
 const userSchema = json.createSchema({
     type: "object",
     name: "user",
-    required: ["first name", "age", "email"],
+    required: ["name", "age", "email"],
     properties: {
-        "first name": {
-            type: "string"
-        },
-        age: {
-            type: "number"
-        },
-        email: {
-            type: "string",
-        },
-        country: "$country"
+        name: "string",
+        age: "number",
+        email: "string"
     },
     strict: true
 });
 
 
-const encoder = json.buildSerializer(userSchema)
-const countryEncoder = json.buildSerializer(countrySchema)
+
 
 const data = {
-    "first name": "Samir",
+    name: "Samir",
     age: 18,
-    email: "hello@world.com",
-    country: {
-        shorthand: "IRL",
-        name: "Ireland",
-        language: "Irish",
-        dialCode: "+353"
-    }
+    email: "hello@world.com"
 }
-const data2 = {
-    shorthand: "IRL",
-    name: "Ireland",
-    language: "Irish",
-    dialCode: "+353"
-}
+
+
+
+const postsSchema = json.createSchema({
+    type: "array",
+    items: [
+        {type: "string", minLength: 5},
+        {type: "number", min: 16},
+    ],
+    minSize: 0
+})
+
+
+
+const postsvalidator = json.buildValidator(postsSchema, {errors: true})
+
+
+
+console.log(postsvalidator([18]));
+
+console.log(postsvalidator.toString());
 
 
 const iterations = 1000000
@@ -63,17 +51,11 @@ const iterations = 1000000
 
 let before = process.hrtime()
 for(let i = 0; i<iterations;i++){
-    encoder(data)
+    postsvalidator([17, 18, 19, 16])
 }
 let diff = process.hrtime(before)
 console.log("User Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")
 
-before = process.hrtime()
-for(let i = 0; i<iterations;i++){
-    countryEncoder(data2)
-}
-diff = process.hrtime(before)
-console.log("Country Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")
 
 // before = process.hrtime()
 // for(let i = 0; i<iterations;i++){
