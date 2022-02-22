@@ -5,6 +5,7 @@ export interface AnySchemaTemplate extends BaseSchemaTemplate{
 }
 
 export class AnySchema extends BaseSchema<AnySchemaTemplate>{
+    typecheck: string = `(!!${this.id})`;
     constructor(template:AnySchemaTemplate){
         super(template)
         this.validateSchema()

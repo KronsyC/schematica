@@ -6,7 +6,7 @@ import { GenericSchema, BooleanSchema, NumberSchema, StringSchema, AnySchema, Ob
 export default class ValidatorBuilder{
     buildStringValidator(schema:StringSchema, varname:string){     
         const fnSrc =  `
-        if(typeof ${varname} !== "string"){
+        if(!${schema.typecheck}){
             throw new Error(\`Data must be of type "string", but was found to be of type \${typeof ${varname}}\`);
         }
         ${schema.maxLength<Number.MAX_SAFE_INTEGER ?`if(${varname}.length > ${schema.maxLength}){
@@ -17,6 +17,7 @@ export default class ValidatorBuilder{
         ${schema.minLength>0 ? `if(${varname}.length < ${schema.minLength}){
             throw new Error(\`Data must contain at least ${schema.minLength} character(s), but was found to have \${${varname}.length}\`);
         }`:""}
+        //#return
         return true;
     `    
     const fn = new Function(varname, fnSrc);
@@ -25,7 +26,7 @@ export default class ValidatorBuilder{
     buildNumberValidator(schema:NumberSchema, _varname:string){
         const varname = _varname
         const fn = new Function(varname, `
-        if(typeof ${varname} !== "number"){
+        if(!${schema.typecheck}){
             throw new Error(\`Data must be of type "number", but was found to be of type \${typeof ${varname}}\`);
         }
         ${schema.max<Number.MAX_SAFE_INTEGER? `if(${varname}>${schema.max}){
@@ -34,6 +35,7 @@ export default class ValidatorBuilder{
         ${schema.min>Number.MIN_SAFE_INTEGER? `if(${varname}<${schema.min}){
             throw new Error(\`Data may be a minimum of ${schema.min}, but was found to be \${${varname}}\`);
         }`:""}
+        //#return
         return true
         `)
         
@@ -42,18 +44,20 @@ export default class ValidatorBuilder{
     buildBooleanValidator(schema:BooleanSchema){
         // Boolean validators are extremely dumb for the time being
         const fn = new Function(schema.id, `
-        if(typeof ${schema.id} !== "boolean"){
+        if(!${schema.typecheck}){
             throw new Error(\`Data must be of type "boolean", but was found to be of type \${typeof ${schema.id}}\`);
         }
+        //#return
         return true
         `)
         return fn
     }
     buildAnyValidator(schema:AnySchema){
         const fn = new Function(schema.id, `
-        if(!${schema.id}){
+        if(!${schema.typecheck}){
             throw new Error(\`Data must be present, but a falsy value was provided\`);
         }
+        //#return
         return true
         `)
         return fn
@@ -67,7 +71,7 @@ export default class ValidatorBuilder{
                 let sourceCode = extractSourceFromFn(childValidator);
                 
                 // Replace return true so it doesnt't cause early termination
-                sourceCode = sourceCode.replaceAll("return true", "")
+                sourceCode = sourceCode.slice(0, sourceCode.indexOf("//#return"))
                 // Make error messages more informative
                 .replaceAll("Data", key)
                 
@@ -114,11 +118,12 @@ export default class ValidatorBuilder{
             return code
         }
         let fnSource = `
-        if(!(${schema.id}&&typeof ${schema.id} === "object"&&!Array.isArray(${schema.id}))){
+        if(!${schema.typecheck}){
             throw new Error(\`Data must be of type "object", but was found to be of type \${typeof ${schema.id}}\`);
         }
         ${strictCheck()}
         ${buildChildValidators()}
+        //#return
         return true
 
         `
@@ -134,9 +139,11 @@ export default class ValidatorBuilder{
             for(let sch of schema.items){
                 const validator = this.build(sch)
                 const source = extractSourceFromFn(validator)
+                // Returning false and ignoring the throw is 1000x faster than using try/catch
+                // Use the string form of true so it isn't mistaken as the output of the whole validator and removed
                 code+=`
                 function ${sch.id}_validator(${sch.id}){
-                    ${source.replaceAll("throw", "return false;throw")}
+                    ${source.replaceAll("throw", "return false;throw").replaceAll("\n\n", "\n").replaceAll("//#return", "")}
                 }
                 `
             }
@@ -147,8 +154,8 @@ export default class ValidatorBuilder{
             let code = ""
             for(let sch of schema.items){
                 code+=`
-                if(${sch.id}_validator(item)){
-                    return true; // Equivalent of continue in forEach loop
+                if(${sch.id}_validator(${schema.id}[index])){
+                    continue;
                 }
                 `
             }
@@ -157,7 +164,7 @@ export default class ValidatorBuilder{
         const source =  `
             ${childValidatorDeclarations()}
 
-            if(!(typeof ${schema.id} === "object"&&Array.isArray(${schema.id}))){
+            if(!(${schema.typecheck})){
                 throw new Error(\`Data must be of type "array", but was found to be of type \${typeof ${schema.id}}\`);
             }
             ${schema.maxSize<Number.MAX_SAFE_INTEGER ?`if(${schema.id}.length > ${schema.maxSize}){
@@ -168,13 +175,11 @@ export default class ValidatorBuilder{
             ${schema.minSize>0 ? `if(${schema.id}.length < ${schema.minSize}){
                 throw new Error(\`Data must contain at least ${schema.minSize} item(s), but was found to have \${${schema.id}.length}\`);
             }`:""}
-
-            ${schema.id}.forEach((item, index) => {
-                ${schema.id}_errorCount = 0;
+            for(let index = 0;index<${schema.id}.length;index++){
                 ${childValidators()}
-                const err = new Error(\`Data does not match schema at index \${index}\`)
-                throw err
-            })
+                throw new Error(\`Data does not match schema at index \${index}\`)
+            }
+            //#return
             return true
 
 
@@ -211,6 +216,9 @@ export default class ValidatorBuilder{
             default:
                 throw new Error(`Cannot build validator for type ${schema.type}`)
         }
+        Object.defineProperty(validator, "name", {value: "validator"});
+        //@ts-expect-error
+        validator.schema = schema
         schema.cache.set("validator", validator)
         return validator;
     }

@@ -5,6 +5,7 @@ export interface BooleanSchemaTemplate extends BaseSchemaTemplate{
 }
 
 export class BooleanSchema extends BaseSchema<BooleanSchemaTemplate>{
+    typecheck: string = `(typeof ${this.id} === "boolean")`;
     constructor(template:BooleanSchemaTemplate){
         super(template)
         this.validateSchema()

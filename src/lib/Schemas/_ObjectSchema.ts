@@ -19,6 +19,7 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
     strict:boolean;
     required: string[];
     properties: Map<string, GenericSchema> = new Map();
+    typecheck: string = `(!!${this.id} && typeof ${this.id} === "object" && !Array.isArray(${this.id}))`
     constructor(
         template: ObjectSchemaTemplate,
         schemaRefStore: Map<string, GenericSchema>

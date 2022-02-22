@@ -10,6 +10,7 @@ export interface NumberSchemaTemplate extends BaseSchemaTemplate{
 export class NumberSchema extends BaseSchema<NumberSchemaTemplate>{
     min:number;
     max:number;
+    typecheck: string = `(typeof ${this.id} === "number" && isFinite(${this.id}))`;
     constructor(template:NumberSchemaTemplate){
         super(template)
         this.min=template.min||Number.MIN_SAFE_INTEGER

@@ -77,6 +77,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     // Otherwise, do the same thing but use JSON.stringify for properties not defined within the schema
     else{
         const fn = new Function(schema.id, `
+        
         ${!isChild ? validatorSrc.replace("return true", "") : "" }
         let encoded="{";
         ${propertyEncoders()}

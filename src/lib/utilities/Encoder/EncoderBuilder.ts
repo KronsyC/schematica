@@ -1,6 +1,6 @@
 import { BooleanSchema } from './../../Schemas/_BooleanSchema';
 import { GenericSchema } from './../../Schemas/Schema';
-import { NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
+import { ArraySchema, NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
 import getValidator from "../helpers/getValidator"
 import objectEncoder from "./objectEncoder";
 import extractSourceFromFn from '../helpers/extractSourceFromFn';
@@ -60,6 +60,7 @@ export default class EncoderBuilder{
         const validator = getValidator(schema, this.validator.builder)
         if(isChild){
             // Make a call to $encodeStr, because optimization babyyyy
+            // This works because validation is handled by the parent
             //@ts-expect-error
             return new Function(schema.id, `return $encodeStr(${schema.id})`)
         }
@@ -68,7 +69,7 @@ export default class EncoderBuilder{
         ${!isChild ? codeGenDeps : ""}
         try{
             let data = ${schema.id}
-            ${!isChild ? extractSourceFromFn(validator).replace("return true;", ""):""}
+            ${!isChild ? extractSourceFromFn(validator).replace("return true", ""):""}
             let i=data.length-1;
             while(i>-1){
                 const char = data[i]   
@@ -98,12 +99,59 @@ export default class EncoderBuilder{
         const validator= getValidator(schema, this.validator.builder);
         //@ts-expect-error
         return new Function(schema.id, `
-            ${!isChild?extractSourceFromFn(validator).replace("return true;", ""):""}
+            ${!isChild?extractSourceFromFn(validator).replaceAll("return true", ""):""}
             return ${schema.id} ? "true" : "false"
         `)
     }
     buildObjectEncoder(schema: ObjectSchema, isChild=false): (data: object) => string {
         return objectEncoder(schema, this.validator.builder, this, isChild)
+    }
+    buildArrayEncoder(schema:ArraySchema, isChild=false):(data:any[]) => string{
+        const validator = getValidator(schema, this.validator.builder)           
+        const validatorSrc = extractSourceFromFn(validator)
+        const childEncoderDeclarations = () => {
+            let code = ""
+            for(let sch of schema.items){
+                const encoder = this.buildEncoder(sch, true)
+                const encoderSrc = extractSourceFromFn(encoder)
+                code+=`
+                function ${sch.id}_encoder(${sch.id}){
+                    ${encoderSrc}
+                }
+                `
+            }
+            return code
+        }
+        const childEncoders = () => {
+            let code = ""
+            for(let sch of schema.items){
+                code+=`
+                if(!enc&&${sch.typecheck.replaceAll(sch.id, "item")}){
+                    const ${sch.id}_encoded = ${sch.id}_encoder(item);
+                    enc=true;
+                    encoded+= !first?","+${sch.id}_encoded : ${sch.id}_encoded
+                    first=false
+                    return
+                }
+                `
+            }
+            return code
+        }
+        const fn = new Function(schema.id, `
+            ${codeGenDeps}
+            ${!isChild?validatorSrc.replaceAll("return true", ""):""}
+            ${childEncoderDeclarations()}
+            let encoded = "[";
+            let first=true;
+            ${schema.id}.forEach((item, index) => {
+                let enc = false;
+                ${childEncoders()}
+                throw new Error(\`Could not encode index \${index} for an unknown reason\`)
+            })
+            return encoded + "]"
+        `)       
+        //@ts-expect-error 
+        return fn
     }
 
 
@@ -116,7 +164,9 @@ export default class EncoderBuilder{
             case "boolean":
                 return this.buildBooleanEncoder(schema as BooleanSchema, isChild);
             case "object":
-                return this.buildObjectEncoder(schema as ObjectSchema, isChild)
+                return this.buildObjectEncoder(schema as ObjectSchema, isChild);
+            case "array":
+                return this.buildArrayEncoder(schema as ArraySchema, isChild)
             default:
                 throw new Error(`No encoder support for type ${schema.type}}`)
         }

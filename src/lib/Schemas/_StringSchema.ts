@@ -13,6 +13,7 @@ export class StringSchema extends BaseSchema<StringSchemaTemplate>{
     minLength:number;
     maxLength:number;
     encoding:TextEncoding;
+    typecheck: string = `(typeof ${this.id} === "string")`;
     constructor(template:StringSchemaTemplate){
         super(template)
         this.encoding=template.encoding||"unicode" // Unicode is fastest to validate

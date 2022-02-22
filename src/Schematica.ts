@@ -74,6 +74,7 @@ export default class Schematica {
     buildSerializer(schema:NumberSchema):(data:number)=>string
     buildSerializer(schema:ObjectSchema):(data:object)=>string
     buildSerializer(schema:StringSchema):(data:string)=>string
+    buildSerializer(schema:ArraySchema):(data:any[]) => string
     buildSerializer(schema: Schema) {
         return this[kEncoder].build(schema);
     }

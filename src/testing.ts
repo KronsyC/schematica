@@ -2,56 +2,42 @@ import Schematica from "./Schematica";
 const json = new Schematica()
 
 
-const userSchema = json.createSchema({
-    type: "object",
-    name: "user",
-    required: ["name", "age", "email"],
-    properties: {
-        name: "string",
-        age: "number",
-        email: "string"
-    },
-    strict: true
-});
 
 
-
-
-const data = {
-    name: "Samir",
-    age: 18,
-    email: "hello@world.com"
-}
 
 
 
 const postsSchema = json.createSchema({
     type: "array",
     items: [
-        {type: "string", minLength: 5},
-        {type: "number", min: 16},
+        {
+            type: "object",
+            required: ["name", "email"],
+            properties: {
+                name: {
+                    type: "string",
+                    minLength: 5,
+                    maxLength: 42
+                },
+                email: "string"
+            },
+            strict: true
+        }
     ],
-    minSize: 0
 })
 
 
-
-const postsvalidator = json.buildValidator(postsSchema, {errors: true})
-
+const postValidator = json.buildValidator(postsSchema, {errors:true})
 
 
-console.log(postsvalidator([18]));
 
-console.log(postsvalidator.toString());
+const iterations = 10000000
 
-
-const iterations = 1000000
-
-
+const data = [{name: "Samir", email:"kronsycanty@gmail.com"}, {name:"Sheen", email:"sheen@ramranch.io"}]
 
 let before = process.hrtime()
 for(let i = 0; i<iterations;i++){
-    postsvalidator([17, 18, 19, 16])
+    postValidator(data)
 }
 let diff = process.hrtime(before)
 console.log("User Enoding took", ((diff[0] * 1000 + diff[1] / 1000000)*1000000)/iterations, "ns")

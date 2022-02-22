@@ -10,7 +10,7 @@ import ERR_INVALID_RANGE from "./errors/ERR_INVALID_RANGE";
 
 export interface ArraySchemaTemplate extends BaseSchemaTemplate {
     type: "array";
-    items: GenericSchemaTemplate[] | string[]; // Schema Template , Generic Type, or Ref
+    items: (string|GenericSchemaTemplate)[] // Schema Template , Generic Type, or Ref
     strict?:boolean;
     minSize?:number;
     maxSize?:number;
@@ -22,6 +22,7 @@ export class ArraySchema extends BaseSchema<ArraySchemaTemplate> {
     strict: boolean;
     minSize:number;
     maxSize:number;
+    typecheck: string = `(typeof ${this.id} === "object" &&Array.isArray(${this.id}))`
     constructor(
         template: ArraySchemaTemplate,
         schemaRefStore: Map<string, GenericSchema>
