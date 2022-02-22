@@ -64,7 +64,7 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     if(schema.strict){
         const fn = new Function(schema.id, `
             ${!isChild ? codeGenDeps : ""}
-            ${!isChild ? validatorSrc.replace("return true", "") : "" }
+            ${!isChild ? validatorSrc.slice(0, validatorSrc.indexOf("//#return") || -1) : "" }
             let encoded="{";
             ${propertyEncoders()}
             encoded+="}";

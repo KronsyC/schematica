@@ -114,9 +114,10 @@ export default class EncoderBuilder{
             for(let sch of schema.items){
                 const encoder = this.buildEncoder(sch, true)
                 const encoderSrc = extractSourceFromFn(encoder)
+                
                 code+=`
                 function ${sch.id}_encoder(${sch.id}){
-                    ${encoderSrc}
+                    ${encoderSrc.replaceAll("//#return", "")}
                 }
                 `
             }
@@ -139,12 +140,12 @@ export default class EncoderBuilder{
         }
         const fn = new Function(schema.id, `
             ${codeGenDeps}
-            ${!isChild?validatorSrc.replaceAll("return true", ""):""}
+            ${!isChild?validatorSrc.slice(0, validatorSrc.indexOf("//#return") || -1):""}
             ${childEncoderDeclarations()}
             let encoded = "[";
             let first=true;
             ${schema.id}.forEach((item, index) => {
-                let enc = false;
+                let enc=false
                 ${childEncoders()}
                 throw new Error(\`Could not encode index \${index} for an unknown reason\`)
             })

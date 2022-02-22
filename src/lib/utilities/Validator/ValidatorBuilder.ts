@@ -138,12 +138,13 @@ export default class ValidatorBuilder{
             let code = ""
             for(let sch of schema.items){
                 const validator = this.build(sch)
-                const source = extractSourceFromFn(validator)
+                const source = extractSourceFromFn(validator).replaceAll("throw", "return false;throw").replaceAll("//#return", "")
+                
                 // Returning false and ignoring the throw is 1000x faster than using try/catch
                 // Use the string form of true so it isn't mistaken as the output of the whole validator and removed
                 code+=`
                 function ${sch.id}_validator(${sch.id}){
-                    ${source.replaceAll("throw", "return false;throw").replaceAll("\n\n", "\n").replaceAll("//#return", "")}
+                    ${source}
                 }
                 `
             }
