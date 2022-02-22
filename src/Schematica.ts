@@ -1,5 +1,5 @@
 
-import { AnySchema, AnySchemaTemplate, ArraySchema, ArraySchemaTemplate, BaseSchema, BooleanSchema, BooleanSchemaTemplate, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema, StringSchemaTemplate } from "./lib/Schemas";
+import { AnySchema, AnySchemaTemplate, ArraySchema, ArraySchemaTemplate, BaseSchema, BooleanSchema, BooleanSchemaTemplate, GenericSchema, NumberSchema, NumberSchemaTemplate, ObjectSchema, ObjectSchemaTemplate, StringSchema, StringSchemaTemplate } from "./lib/Schemas";
 /**
  * This is the base class initialized by the user
  * Responsible for managing caching as well as the other utilities
@@ -75,6 +75,7 @@ export default class Schematica {
     buildSerializer(schema:ObjectSchema):(data:object)=>string
     buildSerializer(schema:StringSchema):(data:string)=>string
     buildSerializer(schema:ArraySchema):(data:any[]) => string
+    buildSerializer(schema:Schema):(data:unknown)=>string
     buildSerializer(schema: Schema) {
         return this[kEncoder].build(schema);
     }
@@ -84,6 +85,7 @@ export default class Schematica {
     createSchema(schema:NumberSchemaTemplate):NumberSchema
     createSchema(schema:StringSchemaTemplate):StringSchema
     createSchema(schema:ArraySchemaTemplate):ArraySchema
+    createSchema(schema:SchemaTemplate): Schema
     createSchema(schema: SchemaTemplate): Schema {
         const sch = newSchema(schema, this[kSchemaRefStore]);
         if (sch.name) {
