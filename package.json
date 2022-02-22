@@ -1,6 +1,6 @@
 {
   "name": "schematica",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "General Purpose library for working with Json, includes validation and parsing utils, currently WIP, array support coming soon",
   "main": "./dist/index.js",
   "repository": "https://github.com/KronsyC/jayson",
