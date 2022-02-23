@@ -1,6 +1,6 @@
 import { BooleanSchema } from './../../Schemas/_BooleanSchema';
 import { GenericSchema } from './../../Schemas/Schema';
-import { ArraySchema, NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
+import { AnySchema, ArraySchema, NumberSchema, ObjectSchema, StringSchema, Validator } from "../../.."
 import getValidator from "../helpers/getValidator"
 import objectEncoder from "./objectEncoder";
 import extractSourceFromFn from '../helpers/extractSourceFromFn';
@@ -154,6 +154,14 @@ export default class EncoderBuilder{
         //@ts-expect-error 
         return fn
     }
+    buildAnyEnocder(schema:AnySchema, isChild = false):(data:any) => string{
+        const validator= getValidator(schema, this.validator.builder);
+        //@ts-expect-error
+        return new Function(schema.id, `
+            ${!isChild?extractSourceFromFn(validator).replaceAll("return true", ""):""}
+            return JSON.stringify(${schema.id})
+        `)
+    }
 
 
     buildEncoder(schema:GenericSchema, isChild=false){
@@ -168,6 +176,8 @@ export default class EncoderBuilder{
                 return this.buildObjectEncoder(schema as ObjectSchema, isChild);
             case "array":
                 return this.buildArrayEncoder(schema as ArraySchema, isChild)
+            case "any":
+                return this.buildAnyEnocder(schema as AnySchema, isChild);
             default:
                 throw new Error(`No encoder support for type ${schema.type}}`)
         }

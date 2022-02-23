@@ -7,7 +7,6 @@ export type SchemaType =
     | "number"
     | "boolean"
     | "array"
-    | "null"
     | "any";
 export interface BaseSchemaTemplate{
     type: SchemaType;
