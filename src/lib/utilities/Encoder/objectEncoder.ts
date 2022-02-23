@@ -61,33 +61,17 @@ export default function objectEncoder(schema:ObjectSchema, validatorBuilder:Vali
     const validator = getValidator(schema, validatorBuilder);
     // If the schema is strict, construct a highly optimized encoder function
     const validatorSrc = extractSourceFromFn(validator)
-    if(schema.strict){
-        const fn = new Function(schema.id, `
-            ${!isChild ? codeGenDeps : ""}
-            ${!isChild ? validatorSrc.slice(0, validatorSrc.indexOf("//#return") || -1) : "" }
-            let encoded="{";
-            ${propertyEncoders()}
-            encoded+="}";
-            return encoded;
-        `)
-
-        //@ts-expect-error
-        return fn
-    }
-    // Otherwise, do the same thing but use JSON.stringify for properties not defined within the schema
-    else{
-        const fn = new Function(schema.id, `
-        
-        ${!isChild ? validatorSrc.replace("return true", "") : "" }
+    const fn = new Function(schema.id, `
+        ${!isChild ? codeGenDeps : ""}
+        ${!isChild ? validatorSrc.slice(0, validatorSrc.indexOf("//#return") || -1) : "" }
         let encoded="{";
         ${propertyEncoders()}
-        ${unknownPropertyEncoders()}
+        ${!schema.strict?unknownPropertyEncoders():""}
         encoded+="}";
         return encoded;
     `)
 
     //@ts-expect-error
     return fn
-    }
 }
 
