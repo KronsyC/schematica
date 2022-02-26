@@ -7,19 +7,20 @@ import { AnySchema, AnySchemaTemplate, ArraySchema, ArraySchemaTemplate, BaseSch
 
 import Validator, { ValidatorOptions } from "./lib/utilities/Validator/Validator";
 import ERR_UNKNOWN_REF from "./errors/Schematica/ERR_UNKNOWN_REF";
-import Encoder from "./lib/utilities/Encoder/Encoder";
+import Encoder, { BuildEncoderOptions } from "./lib/utilities/Encoder/Encoder";
 import {
     GenericSchema as Schema,
     GenericSchemaTemplate as SchemaTemplate,
     Parser,
 } from ".";
 import newSchema from "./lib/Schemas";
+import Normalizer from "./lib/utilities/Normalizer/Normalizer";
 
-const kValidator =      Symbol("Validator");
-const kParser =         Symbol("Parser");
-const kEncoder =        Symbol("Encoder");
-const kSchemaRefStore = Symbol("Schema Store");
-
+const kValidator      =      Symbol("Validator");
+const kParser         =      Symbol("Parser");
+const kEncoder        =      Symbol("Encoder");
+const kNormalizer     =      Symbol("Normalizer")
+const kSchemaRefStore =      Symbol("Schema Store");
 
 export default class Schematica {
     // Store the scemas with their refs
@@ -29,10 +30,12 @@ export default class Schematica {
     [kValidator]: Validator;
     [kEncoder]: Encoder;
     [kParser]: Parser;
+    [kNormalizer]:Normalizer;
     constructor() {
         this[kValidator] = new Validator();
         this[kEncoder] = new Encoder({validator: this[kValidator]});
         this[kParser] = new Parser({validator:   this[kValidator]});
+        this[kNormalizer] = new Normalizer({validator: this[kValidator]})
     }
     /**
      *
@@ -68,17 +71,28 @@ export default class Schematica {
             ).name = "ERR_INVALID_ARGS");
         }
     }
-
-    buildSerializer(schema:AnySchema):(data:any)=>string
-    buildSerializer(schema:BooleanSchema):(data:boolean)=>string
-    buildSerializer(schema:NumberSchema):(data:number)=>string
-    buildSerializer(schema:ObjectSchema):(data:object)=>string
-    buildSerializer(schema:StringSchema):(data:string)=>string
-    buildSerializer(schema:ArraySchema):(data:any[]) => string
-    buildSerializer(schema:Schema):(data:unknown)=>string
-    buildSerializer(schema: Schema) {
-        return this[kEncoder].build(schema);
+    buildSerializer(schema:AnySchema, options?:BuildEncoderOptions):(data:any)=>string
+    buildSerializer(schema:BooleanSchema, options?:BuildEncoderOptions):(data:boolean)=>string
+    buildSerializer(schema:NumberSchema, options?:BuildEncoderOptions):(data:number)=>string
+    buildSerializer(schema:ObjectSchema, options?:BuildEncoderOptions):(data:object)=>string
+    buildSerializer(schema:StringSchema, options?:BuildEncoderOptions):(data:string)=>string
+    buildSerializer(schema:ArraySchema, options?:BuildEncoderOptions):(data:any[]) => string
+    buildSerializer(schema:Schema, options?:BuildEncoderOptions):(data:unknown)=>string
+    buildSerializer(schema: Schema, options:BuildEncoderOptions={}) {
+        return this[kEncoder].build(schema, options);
     }
+
+    buildNormalizer(schema:AnySchema):(data:any)=>any
+    buildNormalizer(schema:BooleanSchema):(data:any)=>boolean
+    buildNormalizer(schema:NumberSchema):(data:any)=>number
+    buildNormalizer(schema:ObjectSchema):(data:object)=>object
+    buildNormalizer(schema:StringSchema):(data:any)=>string
+    buildNormalizer(schema:ArraySchema):(data:any[]) => any[]
+    buildNormalizer(schema:Schema):(data:any)=>any
+    buildNormalizer(schema: Schema) {
+        return this[kNormalizer].build(schema)   
+    }
+    
     createSchema(schema:AnySchemaTemplate):AnySchema
     createSchema(schema:BooleanSchemaTemplate):BooleanSchema
     createSchema(schema:ObjectSchemaTemplate):ObjectSchema
@@ -88,8 +102,8 @@ export default class Schematica {
     createSchema(schema:SchemaTemplate): Schema
     createSchema(schema: SchemaTemplate): Schema {
         const sch = newSchema(schema, this[kSchemaRefStore]);
-        if (sch.name) {
-            this[kSchemaRefStore].set(sch.name, sch);
+        if (sch.ref) {
+            this[kSchemaRefStore].set(sch.ref, sch);
         }
         return sch;
     }

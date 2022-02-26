@@ -1,11 +1,13 @@
 import Validator from "../Validator/Validator";
 import { BooleanSchema, GenericSchema, NumberSchema, ObjectSchema, StringSchema } from "../../Schemas";
-import getValidator from "../helpers/getValidator";
-import objectEncoder from "./objectEncoder";
+import getValidator from "../Validator/getValidator";
 import EncoderBuilder from "./EncoderBuilder";
 
-interface EncoderOpts {
+interface EncoderOptions {
     validator?: Validator;
+}
+export interface BuildEncoderOptions{
+    
 }
 
 /**
@@ -14,21 +16,15 @@ interface EncoderOpts {
 export default class Encoder {
     private validator: Validator;
     private encoderBuilder:EncoderBuilder
-    constructor(opts: EncoderOpts = {}) {
-        opts.validator
-            ? (this.validator = opts.validator)
-            : (this.validator = new Validator());
+    constructor(opts: EncoderOptions = {}) {
+        this.validator = opts.validator || new Validator()
         this.encoderBuilder = new EncoderBuilder(this.validator)
         
     }
 
-
-
-
-
-    build(schema: GenericSchema) {
+    build(schema: GenericSchema, opts:BuildEncoderOptions) {
         let encoder;
-        encoder = this.encoderBuilder.buildEncoder(schema);
+        encoder = this.encoderBuilder.build(schema);
         schema.cache.set("serializer", encoder);
         return encoder;
     }

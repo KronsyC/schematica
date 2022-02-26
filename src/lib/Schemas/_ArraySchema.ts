@@ -1,7 +1,7 @@
 
 import { BaseSchema, BaseSchemaTemplate } from "./__BaseSchema";
 import { GenericSchema, GenericSchemaTemplate } from "./Schema";
-import newSchema, { getPresetByName, SchemaType } from ".";
+import newSchema, { getPresetByName, ObjectSchema, SchemaType } from ".";
 import ERR_UNKNOWN_REF from "../../errors/Schematica/ERR_UNKNOWN_REF";
 import {Presets} from ".";
 import ERR_INVALID_RANGE from "./errors/ERR_INVALID_RANGE";
@@ -68,5 +68,57 @@ export class ArraySchema extends BaseSchema<ArraySchemaTemplate> {
         if(this.items.size === 0){
             throw new Error("You must define at least one key type in an array schema")
         }
+    }
+    get allTypes(){
+        const types:SchemaType[] = []
+        this.items.forEach(item => {
+            if(!types.includes(item.type)){
+                types.push(item.type)
+            }
+            if(item instanceof ObjectSchema || item instanceof ArraySchema){
+                types.push(...item.allTypes.filter(t=>!types.includes(t)))
+            }
+        })
+        return types
+    }
+    // Recursively get all children of the schema
+    get allChildren(){
+        const children:{[x:string]:GenericSchema} = {}
+        this.items.forEach( item => {
+            const name = generateName(item.name)
+            // If names collide, a number is added to the end, i.e Data, Data1, Data2
+            children[name] = item
+            
+            if(item instanceof ObjectSchema || item instanceof ArraySchema){
+                const nested=  item.allChildren
+                for(let key in nested){
+                    const value = nested[key]
+
+                    children[name+"."+key] = value
+                }
+            }
+        })
+        function generateName(nm:string){
+            const childnames = Object.keys(children)
+            let name = nm
+            let counter = 1;
+            if(!childnames.includes(name)){
+                return name
+            }
+            else{
+                return recurse()
+            }
+            
+            function recurse():string{
+                name = nm+counter
+                if(childnames.includes(name)){
+                    return recurse()
+                }
+                else{
+                    return name
+                }
+            }
+        }
+        return children
     }
 }

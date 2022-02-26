@@ -19,24 +19,9 @@ export default class Validator {
 
 
         const error = options.errors || false;
-
         
-        const validator = this.builder.build(schema)
-        
-        if(error){
-            return validator
-        }
-        else{
-            // Create a wrapper around the function that returns false instead of an error
-            return function(data:unknown){
-                try{
-                    return validator(data)
-                }
-                catch{
-                    return false;
-                }
-            }
-        }
+        const validator = this.builder.build(schema, {errors: error})
+        return validator
     }
     static default = new Validator()
 }

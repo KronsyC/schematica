@@ -10,7 +10,7 @@ import { GenericSchema, StringSchema, NumberSchema } from '../../Schemas';
 
 import Validator from "../Validator/Validator";
 import { ERR_BAD_JSON } from './errors/ERR_BAD_JSON';
-import getValidator from '../helpers/getValidator';
+import getValidator from '../Validator/getValidator';
 
 
 const protoPollutionRegex = /"(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])"\s*:/
@@ -72,12 +72,12 @@ export default class Parser{
                         return parsed
                     }
                     else{
-                        // this.scrub(parsed)
-                        // if(protoPollutionRegex.test(data) || constructorPolutionRegex.test(data)){
-                        //     // Scrub the data of all references to __proto__ and constructor                            
-                        //     this.scrub(parsed)
+                        this.scrub(parsed)
+                        if(protoPollutionRegex.test(data) || constructorPolutionRegex.test(data)){
+                            // Scrub the data of all references to __proto__ and constructor                            
+                            this.scrub(parsed)
                             
-                        // }
+                        }
                         // No suspected poisoning     
                         return parsed
 
@@ -97,7 +97,7 @@ export default class Parser{
                 }
             }
         })
-        let validator = getValidator(schema, this.validator.builder)
+        let validator = new Function(schema.id, getValidator(schema, this.validator.builder))
         return parser
     }
 }
