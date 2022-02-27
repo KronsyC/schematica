@@ -1,151 +1,143 @@
 
 import { GenericSchema, StringSchema, NumberSchema, BooleanSchema, AnySchema, ArraySchema, ObjectSchema } from "../../Schemas";
-import extractSourceFromFn from "../helpers/extractSourceFromFn";
 import getValidator from "../Validator/getValidator";
 import Validator from "../Validator/Validator";
-
+export interface BuildNormalizerOptions{
+    isChild?:boolean;
+    asFunction?:boolean
+}
 export default class NormalizerBuilder{
     private validator:Validator;
-
     constructor(validator:Validator){
         this.validator = validator
     }
 
-    // All of the primitive type normalizers are essentially identical
-
-    buildStringNormalizer(schema:StringSchema, isChild:boolean):(data:any)=>string{
-        const validatorSource = getValidator(schema, this.validator.builder)
-        
-        const fn = new Function(schema.id, `
-            ${isChild?"":`        
-            function ${schema.id}_validator(${schema.id}){
-                ${validatorSource.replaceAll("//#return", "") /* Remove the #return flag*/}
-            }
-            `}
+    buildStringNormalizer(schema:StringSchema){
+        return `
             const ${schema.id}_conv = String(${schema.id})
-            ${isChild?"":`${schema.id}_validator(${schema.id}_conv)`}
-
-            return ${schema.id}_conv
-        `)
-        //@ts-expect-error
-        return fn
+        `
     }
-    buildNumberNormalizer(schema:NumberSchema, isChild:boolean):(data:any)=>number{
-        const validatorSource = getValidator(schema, this.validator.builder)
-        const fn = new Function(schema.id, `
-        ${isChild?"":`        
-        function ${schema.id}_validator(${schema.id}){
-            ${validatorSource.replaceAll("//#return", "") /* Remove the #return flag*/}
-        }
-        `}
+    buildNumberNormalizer(schema:NumberSchema){
+        return `
         const ${schema.id}_conv = Number(${schema.id})
-        ${isChild?"":`${schema.id}_validator(${schema.id}_conv)`}
-
-        return ${schema.id}_conv
-        `)
-        //@ts-expect-error
-        return fn
+        `
     }
-    buildBooleanNormalizer(schema:BooleanSchema,isChild:boolean):(data:any)=>boolean{
-        const validatorSource = getValidator(schema, this.validator.builder)
-        const fn = new Function(schema.id, `
-        ${isChild?"":`        
-        function ${schema.id}_validator(${schema.id}){
-            ${validatorSource.replaceAll("//#return", "") /* Remove the #return flag*/}
-        }
-        `}
+    buildBooleanNormalizer(schema:BooleanSchema){
+        return  `
         const ${schema.id}_conv = Boolean(${schema.id})
-        ${isChild?"":`${schema.id}_validator(${schema.id}_conv)`}
-
-        return ${schema.id}_conv
-        `)
-        //@ts-expect-error
-        return fn
+        `
     }
-    buildAnyNormalizer(schema:AnySchema,isChild:boolean):(data:any)=>any{
-        const validatorSource = getValidator(schema, this.validator.builder)
-        const fn = new Function(schema.id, `
-        ${isChild?"":`        
-        function ${schema.id}_validator(${schema.id}){
-            ${validatorSource.replaceAll("//#return", "") /* Remove the #return flag*/}
-        }
-        `}
-        ${isChild?"":`${schema.id}_validator(${schema.id})`}
-        return ${schema.id}
-        `)
-        //@ts-expect-error
-        return fn
+    buildAnyNormalizer(schema:AnySchema){
+        return `
+        const ${schema.id}_conv = ${schema.id}
+        `
     }
-    buildObjectNormalizer(schema:ObjectSchema, isChild:boolean):(data:object)=>object{
-        const validatorSource = getValidator(schema, this.validator.builder)
-    
-        const buildChildNormalizerDeclarations = () => {
-            let code = ""
-            schema.properties.forEach((value, key ) => {
-                code+=`
-                function ${value.id}_normalizer(${value.id}){
-                    ${extractSourceFromFn(this.build(value, true))}
-                }
-                `
-            })
-            return code
-        }
+    buildObjectNormalizer(schema:ObjectSchema){
         const buildChildNormalizers = () => {
             let code = ""
             schema.properties.forEach((value, key) => {
                 code+=`
                 if(${schema.id}["${key}"]){
-                    ${schema.id}_normalized["${key}"] = ${value.id}_normalizer(${schema.id}["${key}"])
+                    ${schema.id}_conv["${key}"] = normalize_${value.id}(${schema.id}["${key}"])
                 }
                 `
                 
             })
             return code
         }
-        const fn = new Function(schema.id, `
-        const ${schema.id}_normalized = ${schema.structure}
+        return`
+        const ${schema.id}_conv = ${schema.structure}
 
-
-        ${isChild?"":`        
-        function ${schema.id}_validator(${schema.id}){
-            ${validatorSource.replaceAll("//#return", "") /* Remove the #return flag*/}
-        }
-        `}
-        ${buildChildNormalizerDeclarations()}
-
-
-
-
-        if(!${schema.typecheck}){
+        if(Array.isArray(${schema.id})){
             throw new Error("Cannot use arrays with an object normalizer")
         }
-
         ${buildChildNormalizers()}
-
-
-        ${isChild?"":`
-            ${schema.id}_validator(${schema.id}_normalized)
-        `}
-        return ${schema.id}_normalized
-        `)
-        //@ts-expect-error
-        return fn
+        `
     }
-    build(schema:GenericSchema, isChild:boolean=false){
-        
+    buildArrayNormalizer(schema: ArraySchema){
+        if(schema.items.size !==1){
+            throw new Error("The Array Normalizer can only be used with schemas of one item type")
+        }
+        const item_id = Array.from(schema.items.keys())[0].id
+
+
+        return `
+            const ${schema.id}_conv = []
+            if(!Array.isArray(${schema.id})){
+                throw new Error("Data passed to an array normalizer must be an array")
+            }
+            ${schema.id}.forEach(item => {
+                ${schema.id}_conv.push(normalize_${item_id}(item))
+            })
+        `
+    }
+    build(schema:GenericSchema, options: BuildNormalizerOptions={}){
+        const child = options.isChild ?? false
+        const asFunction = options.asFunction??true
+
+        let normalizer = ""
         switch(schema.type){
             case "string":
-                return this.buildStringNormalizer(schema as StringSchema, isChild);
+                normalizer+= this.buildStringNormalizer(schema as StringSchema);
+                break;
+
             case "number":
-                return this.buildNumberNormalizer(schema as NumberSchema, isChild);
+                normalizer+= this.buildNumberNormalizer(schema as NumberSchema);
+                break;
+
             case "boolean":
-                return this.buildBooleanNormalizer(schema as BooleanSchema, isChild);
+                normalizer+= this.buildBooleanNormalizer(schema as BooleanSchema);
+                break;
+
             case "any":
-                return this.buildAnyNormalizer(schema as AnySchema, isChild);
+                normalizer+= this.buildAnyNormalizer(schema as AnySchema);
+                break;
+
             case "object":
-                return this.buildObjectNormalizer(schema as ObjectSchema, isChild)
+                normalizer+= this.buildObjectNormalizer(schema as ObjectSchema)
+                break;
+
+            case "array":
+                normalizer+= this.buildArrayNormalizer(schema as ArraySchema)
+                break;
             default:
                 throw new Error(`Cannot create normalizer for type ${schema.type}`)
+        }
+        if(!child){
+            
+            const validator = getValidator(schema, this.validator.builder)
+            let dependencies = `
+            function validate_${schema.id}(${schema.id}){
+                ${validator}
+            }
+            validate_${schema.id}(${schema.id}_conv)
+            `
+            if(schema instanceof ObjectSchema || schema instanceof ArraySchema){
+                const children = schema.allChildren
+                for(let path in children){
+                    const child = children[path]
+                    const normalizer = this.build(child, {asFunction: false, isChild: true})
+                    dependencies+=`
+                    function normalize_${child.id}(${child.id}){
+                        ${normalizer}
+                    }
+                    `
+                }
+            }
+
+            
+            normalizer+=dependencies
+        }
+        normalizer+=`
+        return ${schema.id}_conv
+        `
+
+        if(asFunction){
+                        
+            return new Function(schema.id, normalizer)
+        }
+        else{
+            return normalizer
         }
     }
 }

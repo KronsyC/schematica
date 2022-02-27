@@ -69,14 +69,18 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
      */
     get structure(){
         let code = "{"
+        let first=true
         this.properties.forEach((v, k) => {
+            if(!first)code+=","
             if(v instanceof ObjectSchema){
                 // Recursively generate structure
+                
                 code+=`"${k}":${v.structure}`
             }
             else{
                 code+=`"${k}":undefined`
             }
+            first=false
         })
         code += "}"
         return code

@@ -102,12 +102,7 @@ export default class EncoderBuilder{
             let code = `
             Object.keys(${schema.id}).forEach(key=> {
                 if(!(${isProperty("key")})){
-                    if(encoded.endsWith(",")){
-                        encoded+=JSON.stringify(${schema.id}[key])
-                    }
-                    else{
-                        encoded+=","+'"'+key+'"'+":"+JSON.stringify(${schema.id}[key])
-                    }
+                    encoded+=","+'"'+key+'"'+":"+JSON.stringify(${schema.id}[key])
                 }
             })
             `
@@ -123,12 +118,13 @@ export default class EncoderBuilder{
         `
     }
     buildArrayEncoder(schema:ArraySchema){
+        
         const childEncoders = () => {
             let code = ""
             for(let sch of schema.items){
                 code+=`
                 if(!enc && ${sch.typecheck.replaceAll(sch.id, "item")}){
-                    const ${sch.id}_encoded = ${sch.id}_encoder(item);
+                    const ${sch.id}_encoded = encode_${sch.id}(item);
                     enc=true;
                     encoded+= !first?","+${sch.id}_encoded : ${sch.id}_encoded
                     first=false
@@ -176,8 +172,9 @@ export default class EncoderBuilder{
                 break;
             case "array":
                 encoder+= this.buildArrayEncoder(schema as ArraySchema)
+                break;
             case "any":
-                encoder = this.buildAnyEncoder(schema as AnySchema);
+                encoder += this.buildAnyEncoder(schema as AnySchema);
                 break;
             default:
                 throw new Error(`No encoder support for type ${schema.type}`)

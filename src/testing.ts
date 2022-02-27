@@ -611,7 +611,7 @@ const sch = json.createSchema({
         {
             type: "object",
             required: ["userId", "id", "title", "body"],
-            name: "user",
+            name: "post",
             properties: {
                 userId: "number",
                 id: "number",
@@ -627,7 +627,12 @@ const sch = json.createSchema({
 const validator = json.buildValidator(sch)
 const parser = json.buildParser(sch)
 const encoder = json.buildSerializer(sch)
+const normalizer = json.buildNormalizer(sch)
 
-const postsStr = encoder(posts)
+
+
+console.log(normalizer(posts));
+
+
 
 while (true) {}
