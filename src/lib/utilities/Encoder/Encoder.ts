@@ -7,7 +7,12 @@ interface EncoderOptions {
     validator?: Validator;
 }
 export interface BuildEncoderOptions{
-    
+    /**
+     * *[ OBJECT / ARRAY ]*   
+     * Should the encoder throw an error if an unexpected   
+     * property is encountered, or silently skip it
+     */
+    onAdditionalProperty?: "error" | "skip"
 }
 
 /**
@@ -22,9 +27,10 @@ export default class Encoder {
         
     }
 
-    build(schema: GenericSchema, opts:BuildEncoderOptions) {
+    build(schema: GenericSchema, opts:BuildEncoderOptions = {}) {
         let encoder;
-        encoder = this.encoderBuilder.build(schema);
+        const throwsErrors = opts.onAdditionalProperty==="skip"?false:true
+        encoder = this.encoderBuilder.build(schema, {additionalPropertyErrors: throwsErrors});
         schema.cache.set("serializer", encoder);
         return encoder;
     }

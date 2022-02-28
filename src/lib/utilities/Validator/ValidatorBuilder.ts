@@ -25,6 +25,14 @@ function $objectCheck(data){
 function $anyCheck(data){
     return !!data
 }
+
+function $additionalPropertyError(message){
+    return {
+        message: message??"Additional Properties not allowed",
+        name: "ERR_ADDITIONAL_PROPERTY"
+    }
+}
+
 `
 export default class ValidatorBuilder{
     buildStringValidator(schema:StringSchema){     
@@ -118,7 +126,7 @@ export default class ValidatorBuilder{
                 for(let key in ${schema.id}){
                     if(!(${genKeyCheck("key")})){
                         //#error
-                        throw new Error(\`Key \${key} is not allowed\`);
+                        throw $additionalPropertyError(\`Key \${key} is not allowed\`)
                         //#enderror
                     }
                 }
@@ -151,8 +159,9 @@ export default class ValidatorBuilder{
             throw new Error(\`{{name}} must be of type "object", but was found to be of type \${typeof ${schema.id}}\`);
             //#enderror
         }
-        ${schema.strict ? strictCheck():undefined}
         ${childValidators()}
+        // Throw the error at the end, so that in other utils, doing a try-catch will not allow unvalidated data
+        ${schema.strict ? strictCheck():undefined}
         //#return
         return true
         //#endreturn
@@ -188,7 +197,8 @@ export default class ValidatorBuilder{
             }`:""}
             for(let index = 0;index<${schema.id}.length;index++){
                 ${childValidators()}
-                throw new Error(\`Data does not match schema at index \${index}\`)
+
+                throw $additionalPropertyError(\`Data does not match schema at index \${index}\`)
             }
             
             return true

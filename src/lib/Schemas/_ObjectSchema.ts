@@ -10,7 +10,7 @@ import {Presets} from ".";
 export interface ObjectSchemaTemplate extends BaseSchemaTemplate {
     type: "object";
     strict?: boolean;
-    required?: string[];
+    required?: string[] | "all";
     properties?: { [x: string]: GenericSchemaTemplate | SchemaType | string };
 }
 
@@ -20,13 +20,23 @@ export class ObjectSchema extends BaseSchema<ObjectSchemaTemplate> {
     required: string[];
     properties: Map<string, GenericSchema> = new Map();
     typecheck: string = `(!!${this.id} && typeof ${this.id} === "object" && !Array.isArray(${this.id}))`
+    schemaRefStore;
     constructor(
         template: ObjectSchemaTemplate,
         schemaRefStore: Map<string, GenericSchema>
     ) {
         super(template);
+        this.schemaRefStore = schemaRefStore
         this.strict = template.strict || false;
-        this.required = template.required || [];
+        this.required = []
+        if(template.required === "all"){
+            for(let name in template.properties){
+                this.required.push(name)
+            }
+        }
+        else{
+            this.required = template.required || []
+        }
 
         // Convert template properties into actual Schemas
         if(template.properties){
