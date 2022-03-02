@@ -1,47 +1,36 @@
 import Schematica from "./Schematica";
 
-
 const json = new Schematica();
 
 const sch = json.createSchema({
     type: "object",
-    required: "all",
-    name: "user",
+    required: ["name", "age"],
     properties: {
-        id: "number",
-        name: {type: "string", maxLength: 42, minLength: 3},
-        email: "string",
-        password: "string"
+        age: {
+            type: "number",
+            min: 12,
+            max: 15,
+        },
+        name: {
+            type: "string",
+            minLength: 3,
+            maxLength: 42,
+        },
     },
     strict: true,
 });
 
-const validator = json.buildValidator(sch, {errors: true})
-const encoder = json.buildSerializer(sch, {onAdditionalProperty: "error"})
-const parser = json.buildParser(sch)
-const normalizer = json.buildNormalizer(sch)
+const validator = json.buildValidator(sch, { errors: true });
+const encoder = json.buildSerializer(sch, { onAdditionalProperty: "error" });
+const parser = json.buildParser(sch);
+const normalizer = json.buildNormalizer(sch);
 const data = {
-  id: 1,
-  name: "Kronsy",
-  email: "john@doe.com",
-  password: "abc123",
-}
-
-const encoded = JSON.stringify(data)
+  name: "Sam",
+  age: 18445
+};
 
 
+// const parsed = parser(encoded)
 console.log(validator(data));
-console.log(encoder(data));
-console.log(normalizer(data));
-console.log(parser(encoded));
-
-
-
-
-
-
-
-
-
 
 while (true) {}

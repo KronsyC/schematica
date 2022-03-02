@@ -37,7 +37,7 @@ export interface SchematicaOptions {}
 export interface SchematicaError {
     type: string;
     context: string;
-    message: string;
+    reason: string;
 }
 
 

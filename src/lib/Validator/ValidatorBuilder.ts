@@ -78,12 +78,14 @@ export default class ValidatorBuilder{
                 type: "ERR_OUT_OF_RANGE",
                 reason: "must be less than ${schema.max}"
             })
+            return false
         }`:""}
         ${schema.min>Number.MIN_SAFE_INTEGER? `if(${schema.id}<${schema.min}){
             $error({
                 type: "ERR_OUT_OF_RANGE",
-                reason: "must be greater than than ${schema.max}"
+                reason: "must be greater than than ${schema.min}"
             })
+            return false
         }`:""}
         return true
         `
@@ -148,13 +150,21 @@ export default class ValidatorBuilder{
             schema.properties.forEach( (child, key) => {
                 const isRequired = schema.required.includes(key)
                 if(isRequired){
-                    code+=`if(!validate_${child.id}(${schema.id}["${key}"]))return false;`
+                    code+=`
+                    if(${schema.id}["${key}"] === undefined){
+                        $error({
+                            type: "ERR_MISSING_PROPERTY",
+                            reason: "missing required property '${key}'"
+                        })
+                        return false;
+                    }
+                    if(!validate_${child.id}(${schema.id}["${key}"]))return false;
+                    `
                 }
                 else{
                     code+=`
                     if(${schema.id}["${key}"]){
                         if(!validate_${child.id}(${schema.id}["${key}"]))return false;
-                        
                     }
                     `
                 }
@@ -322,6 +332,8 @@ export default class ValidatorBuilder{
         const asFunction = options.asFunction===undefined?true:options.asFunction
         let validator;
         if(asFunction){
+            console.log(validatorSrc);
+                        
             validator = new Function(`
             let validate_${schema.id} = function(${schema.id}){
                 ${validatorSrc}
