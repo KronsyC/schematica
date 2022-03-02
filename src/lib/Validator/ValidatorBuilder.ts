@@ -332,7 +332,6 @@ export default class ValidatorBuilder{
         const asFunction = options.asFunction===undefined?true:options.asFunction
         let validator;
         if(asFunction){
-            console.log(validatorSrc);
                         
             validator = new Function(`
             let validate_${schema.id} = function(${schema.id}){
