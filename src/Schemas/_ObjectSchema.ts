@@ -2,7 +2,7 @@
 import { BaseSchema, BaseSchemaTemplate } from "./__BaseSchema";
 import { GenericSchema, GenericSchemaTemplate } from "./Schema";
 import newSchema, { ArraySchema, getPresetByName, SchemaType } from ".";
-import ERR_UNKNOWN_REF from "../../errors/Schematica/ERR_UNKNOWN_REF";
+import ERR_UNKNOWN_REF from "../errors/Schematica/ERR_UNKNOWN_REF";
 import {Presets} from ".";
 
 

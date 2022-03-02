@@ -9,24 +9,38 @@ const sch = json.createSchema({
     name: "user",
     properties: {
         id: "number",
-        name: "string",
+        name: {type: "string", maxLength: 42, minLength: 3},
         email: "string",
         password: "string"
     },
     strict: true,
 });
 
-const encoder = json.buildSerializer(sch, {onAdditionalProperty: "skip"})
+const validator = json.buildValidator(sch, {errors: true})
+const encoder = json.buildSerializer(sch, {onAdditionalProperty: "error"})
+const parser = json.buildParser(sch)
+const normalizer = json.buildNormalizer(sch)
 const data = {
   id: 1,
-  name: "John Doe",
+  name: "Kronsy",
   email: "john@doe.com",
   password: "abc123",
-  unknown:"test"
 }
 
+const encoded = JSON.stringify(data)
 
-console.log(encoder(data))
+
+console.log(validator(data));
+console.log(encoder(data));
+console.log(normalizer(data));
+console.log(parser(encoded));
+
+
+
+
+
+
+
 
 
 

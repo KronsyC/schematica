@@ -105,12 +105,15 @@ export default class NormalizerBuilder{
         }
         if(!child){
             
-            const validator = getValidator(schema, this.validator.builder)
+            const validator = getValidator(schema, this.validator.builder)            
+            
             let dependencies = `
             function validate_${schema.id}(${schema.id}){
                 ${validator}
             }
-            validate_${schema.id}(${schema.id}_conv)
+            if(!validate_${schema.id}(${schema.id}_conv)){
+                throw Object.defineProperty(new Error("Data does not match normalizer schema"), "error", {value: validate_${schema.id}.error})
+            }
             `
             if(schema instanceof ObjectSchema || schema instanceof ArraySchema){
                 const children = schema.allChildren

@@ -1,4 +1,4 @@
-import genId from "../utilities/helpers/genCodeSafeId";
+import genId from "../lib/helpers/genCodeSafeId";
 
 //TYPEADDITION
 export type SchemaType =

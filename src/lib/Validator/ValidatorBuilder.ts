@@ -1,12 +1,10 @@
-import extractSourceFromFn from '../helpers/extractSourceFromFn';
-import { GenericSchema, BooleanSchema, NumberSchema, StringSchema, AnySchema, ObjectSchema, ArraySchema, SchemaType } from './../../Schemas';
+import { GenericSchema, BooleanSchema, NumberSchema, StringSchema, AnySchema, ObjectSchema, ArraySchema, SchemaType } from '../../Schemas';
 interface BuildValidatorOptions{
     isChild?:boolean;
     context?:string;
-    errors?:boolean;
     asFunction?:boolean;
 }
-export const deps =`
+const deps =`
 function $stringCheck(data){
     return typeof data === "string"
 }
@@ -26,86 +24,94 @@ function $anyCheck(data){
     return !!data
 }
 
-function $additionalPropertyError(message){
-    return {
-        message: message??"Additional Properties not allowed",
-        name: "ERR_ADDITIONAL_PROPERTY"
-    }
-}
 
 `
+
 export default class ValidatorBuilder{
     buildStringValidator(schema:StringSchema){     
         const varname = schema.id
         const fn =  `
         if(!$stringCheck(${varname})){
-            //#error
-            throw new Error(\`{{name}} must be of type "string", but was found to be of type \${typeof ${varname}}\`);
-            //#enderror
+            $error({
+                type: "ERR_TYPE_MISMATCH",
+                reason: "must be of type 'string'"
+            })
+            return false
         }
         ${schema.maxLength<Number.MAX_SAFE_INTEGER ?`if(${varname}.length > ${schema.maxLength}){
-            //#error
-            throw new Error(\`{{name}}  may not contain over ${schema.maxLength} character(s), but was found to have \${${varname}.length}\`);
-            //#enderror
+            $error({
+                type: "ERR_OUT_OF_RANGE",
+                reason: "must not contain more than ${schema.maxLength} characters"
+            })
+            return false
         }`:""
         }
         ${schema.minLength>0 ? `if(${schema.id}.length < ${schema.minLength}){
-            //#error
-            throw new Error(\`{{name}}  must contain at least ${schema.minLength} character(s), but was found to have \${${varname}.length}\`);
-            //#enderror
+            $error({
+                type: "ERR_OUT_OF_RANGE",
+                reason: "must contain at least ${schema.minLength} characters"
+            })
+            return false
         }`:""}
-        //#return
         return true;
-        //#endreturn
     `    
     return fn
     }
     buildNumberValidator(schema:NumberSchema){
         const fn = `
         if(!$numberCheck(${schema.id})){
-            //#error
-            throw new Error(\`{{name}} must be of type "number", but was found to be of type \${typeof ${schema.id}}\`);
-            //#enderror
+            if(isNaN(${schema.id})){
+                $error({
+                    type: "ERR_TYPE_MISMATCH",
+                    reason: "cannot be NaN"
+                })
+                return false
+            }
+            $error({
+                type: "ERR_TYPE_MISMATCH",
+                reason: "must be of type 'number'"
+            })
+            return false
         }
         ${schema.max<Number.MAX_SAFE_INTEGER? `if(${schema.id}>${schema.max}){
-            //#error
-            throw new Error(\`{{name}} may be a max of ${schema.max}, but was found to be \${${schema.id}}\`);
-            //#enderror
+            $error({
+                type: "ERR_OUT_OF_RANGE",
+                reason: "must be less than ${schema.max}"
+            })
         }`:""}
         ${schema.min>Number.MIN_SAFE_INTEGER? `if(${schema.id}<${schema.min}){
-            //#error
-            throw new Error(\`{{name}} may be a minimum of ${schema.min}, but was found to be \${${schema.id}}\`);
-            //#enderror
+            $error({
+                type: "ERR_OUT_OF_RANGE",
+                reason: "must be greater than than ${schema.max}"
+            })
         }`:""}
-        //#return
         return true
-        //#endreturn
         `
         return fn;
     }
     buildBooleanValidator(schema:BooleanSchema){
         const fn = `
         if(!$booleanCheck(${schema.id})){
-            //#error
-            throw new Error(\`{{name}} must be of type "boolean", but was found to be of type \${typeof ${schema.id}}\`);
-            //#enderror
+            $error({
+                type: "ERR_TYPE_MISMATCH",
+                reason: "must be of type 'boolean'"
+            })
+            return false
         }
-        //#return
         return true
-        //#endreturn
         `
         return fn
     }
     buildAnyValidator(schema:AnySchema){
         const fn =  `
         if(!$anyCheck(${schema.id})){
-            //#error
-            throw new Error(\`{{name}} must be truthy, but a falsy value was provided\`);
-            //#enderror
+            $error({
+                type: "ERR_NOT_NULLABLE",
+                reason: "cannot be a null value"
+            })
+            return false
         }
-        //#return
         return true
-        //#endreturn
         `
         return fn
     }
@@ -125,9 +131,11 @@ export default class ValidatorBuilder{
                 code+=`
                 for(let key in ${schema.id}){
                     if(!(${genKeyCheck("key")})){
-                        //#error
-                        throw $additionalPropertyError(\`Key \${key} is not allowed\`)
-                        //#enderror
+                        $error({
+                            type: "ERR_UNEXPECTED_PROPERTY",
+                            reason: \`key \${key} is not allowed\`
+                        })
+                        return false
                     }
                 }
                 `
@@ -155,16 +163,16 @@ export default class ValidatorBuilder{
         }
         let fn = `
         if(!$objectCheck(${schema.id})){
-            //#error
-            throw new Error(\`{{name}} must be of type "object", but was found to be of type \${typeof ${schema.id}}\`);
-            //#enderror
+            $error({
+                type: "ERR_TYPE_MISMATCH",
+                reason: "must be of type 'object'"
+            })
+            return false
         }
         ${childValidators()}
-        // Throw the error at the end, so that in other utils, doing a try-catch will not allow unvalidated data
         ${schema.strict ? strictCheck():undefined}
-        //#return
+
         return true
-        //#endreturn
         `
         
         return fn
@@ -210,10 +218,68 @@ export default class ValidatorBuilder{
 
     }
 
+    private buildDependencies(schema:GenericSchema){
+        let dependencies = `
+        function $error(params){
+            const {type="Validation Error", reason} = params
+        
+            if(!(type&&reason)){
+                throw (new Error("[INTERNAL] Must provide error type, context, and reason") .name = "ImplementationError")
+            }
+            validate_${schema.id}.error = {
+                type,
+                context: {{name}},
+                reason
+            }
+        }
+        `
+        let types:SchemaType[] = []
+        if(schema instanceof ArraySchema || schema instanceof ObjectSchema){
+            types.push(...schema.allTypes)
+        }
+        types.includes(schema.type)?undefined:types.push(schema.type)
+        dependencies += deps
+        
+        // If the schema is a container type, generate all of it's child validators as dependencies
+        if(schema instanceof ObjectSchema || schema instanceof ArraySchema){
+            const children:{[x:string]:GenericSchema} = schema.allChildren
+            
+            for(let path in children){
+                const child = children[path]                    
+                                    
+                const validator = this.build(child, {
+                    isChild: true,
+                    context: schema.name + "." + path,
+                    asFunction: false // Source code
+                })
+                
+                dependencies+=`
+                function validate_${child.id}(${child.id}){
+                    
+                // Declare a localized error function bound to the current context
+                function $error(params){
+                    const {type="Validation Error", reason} = params
+
+                    if(!(type&&reason)){
+                        throw (new Error("[INTERNAL] Must provide error type, context, and reason") .name = "ImplementationError")
+                    }
+                    validate_${schema.id}.error = {
+                        type,
+                        context: "${schema.name +  "." + path}",
+                        reason
+                    }
+                }
+                    ${validator}
+                }
+                `
+            }
+            
+        }
+        return dependencies
+    }
     build(schema:GenericSchema, options: BuildValidatorOptions={}): Function|string{
         
-        let validatorSrc:string
-        
+        let validatorSrc=""
         switch(schema.type){
             case "string":
                 validatorSrc = this.buildStringValidator(schema as StringSchema);
@@ -228,7 +294,6 @@ export default class ValidatorBuilder{
             case "any":
                 validatorSrc = this.buildAnyValidator(schema as AnySchema)
                 break;
-
             case "object":
                 validatorSrc = this.buildObjectValidator(schema as ObjectSchema)
                 break;
@@ -239,63 +304,40 @@ export default class ValidatorBuilder{
                 throw new Error(`Cannot build validator for type ${schema.type}`)
         }
         
-        const child = options.isChild || false
+        const child = options.isChild ?? false
         const context = options.context
+        
         const name = context || schema.name
     
-        // If Errors are disabled, replace all flagged error statements with 'return false'
 
-        validatorSrc=validatorSrc.replaceAll("{{name}}", name)
-
+        
         if(!child){
-            // Smaller Dependencies
-            let dependencies = ""
-            let types:SchemaType[] = []
-            if(schema instanceof ArraySchema || schema instanceof ObjectSchema){
-                types.push(...schema.allTypes)
-            }
-            types.includes(schema.type)?undefined:types.push(schema.type)
-            dependencies += deps
-            
-            // If the schema is a container type, generate all of it's child validators as dependencies
-            if(schema instanceof ObjectSchema || schema instanceof ArraySchema){
-                const children:{[x:string]:GenericSchema} = schema.allChildren
-                
-                for(let path in children){
-                    const child = children[path]                    
-                                        
-                    const validator = this.build(child, {
-                        isChild: true,
-                        context: schema.name + "." + path,
-                        errors: true, // Allow errors to propogate to the top level
-                        asFunction: false // Source code
-                    })
-                    
-                    dependencies+=`
-                    function validate_${child.id}(${child.id}){
-                        ${validator}
-                    }
-                    `
-                }
-                
-            }
-            
+            const dependencies = this.buildDependencies(schema)
             validatorSrc = dependencies+"\n\n"+validatorSrc
             
         }
-        if(!options.errors){
-            while(validatorSrc.includes("//#error")){
+        validatorSrc=validatorSrc.replaceAll("{{name}}", `"${name}"`)
+        // If Errors are disabled, replace all flagged error statements with 'return false'
 
-                const start = validatorSrc.indexOf("//#error")
-                const end = validatorSrc.indexOf("//#enderror")
-                
-                validatorSrc = validatorSrc.slice(0, start) + "return false;\n"+ validatorSrc.slice(end+11)
-            }
-        }
         const asFunction = options.asFunction===undefined?true:options.asFunction
-        
-        const validator = asFunction?new Function(schema.id, validatorSrc):validatorSrc
-        schema.cache.set(`validator${options.errors?"-withError":""}${options.asFunction===false?"-asText":""}`, validator)
+        let validator;
+        if(asFunction){
+            validator = new Function(`
+            let validate_${schema.id} = function(${schema.id}){
+                ${validatorSrc}
+
+            }
+            validate_${schema.id} = validate_${schema.id}.bind(validate_${schema.id})
+            return validate_${schema.id}
+            `)
+            validator = validator()          
+              
+            Object.defineProperty(validator, "error", {value: undefined, writable: true, configurable: true})
+        }
+        else{
+            validator = validatorSrc
+        }
+        schema.cache.set(`validator${options.asFunction===false?"-asText":""}`, validator)
         return validator
     }
 }

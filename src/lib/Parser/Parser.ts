@@ -6,7 +6,7 @@ import { GenericSchema, StringSchema, NumberSchema } from '../../Schemas';
  * Essentially just a wrapper around JSON.parse
  */
 
-// Thank you secure-json-parse for allot of the ideas in this class
+// Thank you secure-json-parse for the proto-pollution sanization logic and regex
 
 import Validator from "../Validator/Validator";
 import { ERR_BAD_JSON } from './errors/ERR_BAD_JSON';
@@ -27,7 +27,6 @@ export default class Parser{
     }
 
     scrub(data:Object){
-        // Iteratively scrub data, recursion can overflow stack
         let next = [data]
         while(next.length>0){
             const nodes = next
@@ -61,8 +60,6 @@ export default class Parser{
     build(schema:GenericSchema){
         const parser = ((data:string, reviver?:( key:string, value:any )=>any) => {
             try{
-                // JSON.parse is safe, but it's better to clean it because users may use polluted data insecurely
-                // const parsed = {name:"Samir",age:18, __proto__:null}
                 const parsed = JSON.parse(data)
                 if(validator(parsed)){
                     // Do some safety checking
@@ -83,9 +80,8 @@ export default class Parser{
 
                     }
                 }
-                else{
-                    
-                    throw new ERR_INVALID_DATA("Data does not match parser schema")
+                else{                    
+                    throw new ERR_INVALID_DATA("Data does not match parser schema", validator.error)
                 } 
             }
             catch(err){
@@ -97,7 +93,10 @@ export default class Parser{
                 }
             }
         })
-        let validator = new Function(schema.id, getValidator(schema, this.validator.builder))
+        let validator = new Function(`return function validate_${schema.id}(${schema.id}){
+            ${getValidator(schema, this.validator.builder)}
+        } `)()
+        
         return parser
     }
 }

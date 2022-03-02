@@ -1,4 +1,4 @@
-import { GenericSchema, Validator } from "../../..";
+import { GenericSchema, Validator } from "../..";
 import ValidatorBuilder from "./ValidatorBuilder";
 
 export default function getValidatorNoErrors(schema:GenericSchema, validator:ValidatorBuilder):string{
