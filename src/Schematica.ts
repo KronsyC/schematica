@@ -48,7 +48,8 @@ type EncoderFn<InputType> = {
 };
 type ValidatorFn<InputType> = {
     error?: SchematicaError;
-    (data: InputType): boolean;
+    // Undefined is there for nullable schemas
+    (data: InputType|undefined): boolean;
 };
 
 export default class Schematica {

@@ -23,8 +23,6 @@ function $objectCheck(data){
 function $anyCheck(data){
     return !!data
 }
-
-
 `
 
 export default class ValidatorBuilder{
@@ -290,25 +288,33 @@ export default class ValidatorBuilder{
     build(schema:GenericSchema, options: BuildValidatorOptions={}): Function|string{
         
         let validatorSrc=""
+        if(schema.nullable){
+            // Add a null/undefined check to the data, if it is null or undefined return true
+            validatorSrc+=`
+            if(${schema.id}===undefined||${schema.id}===null){
+                return true
+            }
+            `
+        }
         switch(schema.type){
             case "string":
-                validatorSrc = this.buildStringValidator(schema as StringSchema);
+                validatorSrc += this.buildStringValidator(schema as StringSchema);
                 break;
             case "number":
-                validatorSrc = this.buildNumberValidator(schema as NumberSchema)
+                validatorSrc += this.buildNumberValidator(schema as NumberSchema)
                 break;
 
             case "boolean":
-                validatorSrc = this.buildBooleanValidator(schema as BooleanSchema)
+                validatorSrc += this.buildBooleanValidator(schema as BooleanSchema)
                 break;
             case "any":
-                validatorSrc = this.buildAnyValidator(schema as AnySchema)
+                validatorSrc += this.buildAnyValidator(schema as AnySchema)
                 break;
             case "object":
-                validatorSrc = this.buildObjectValidator(schema as ObjectSchema)
+                validatorSrc += this.buildObjectValidator(schema as ObjectSchema)
                 break;
             case "array":
-                validatorSrc = this.buildArrayValidator(schema as ArraySchema)
+                validatorSrc += this.buildArrayValidator(schema as ArraySchema)
                 break;
             default:
                 throw new Error(`Cannot build validator for type ${schema.type}`)
