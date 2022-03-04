@@ -1,13 +1,14 @@
 {
   "name": "schematica",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "description": "General Purpose library for working with Json, includes validation and parsing utils, currently WIP, array support coming soon",
   "main": "./dist/index.js",
   "repository": "https://github.com/KronsyC/jayson",
   "author": "Kronsy",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node-dev ./src/testing.ts"
+    "dev": "ts-node-dev ./src/testing.ts",
+    "pub": "tsc && yarn publish"
   },
   "keywords": [
     "json",
