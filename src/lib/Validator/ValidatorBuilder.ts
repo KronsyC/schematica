@@ -291,7 +291,7 @@ export default class ValidatorBuilder{
         if(schema.nullable){
             // Add a null/undefined check to the data, if it is null or undefined return true
             validatorSrc+=`
-            if(${schema.id}===undefined||${schema.id}===null){
+            if(${schema.id}===undefined||${schema.id}===null||${schema.id}===""||${schema.id}===NaN){
                 return true
             }
             `
