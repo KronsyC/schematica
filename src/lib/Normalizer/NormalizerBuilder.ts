@@ -45,8 +45,20 @@ export default class NormalizerBuilder{
             })
             return code
         }
+        const constDeclaration = () => {
+            let code = `const ${schema.id}_conv = ${schema.structure}`
+            if(!schema.strict){
+                // Set the converted props to the initial props
+                // They will be gradually replaced with the normalized equivalents
+                code = `
+                const ${schema.id}_conv = { ...${schema.structure}, ...${schema.id} }
+                `
+            }
+            return code
+        }
         return`
-        const ${schema.id}_conv = ${schema.structure}
+        ${constDeclaration()}
+        
 
         if(Array.isArray(${schema.id})){
             throw new Error("Cannot use arrays with an object normalizer")
