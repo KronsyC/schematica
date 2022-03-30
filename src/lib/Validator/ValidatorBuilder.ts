@@ -29,7 +29,7 @@ export default class ValidatorBuilder{
     buildStringValidator(schema:StringSchema){     
         const varname = schema.id
         const fn =  `
-        if(!$stringCheck(${varname})){
+        if(!($stringCheck(${varname})){
             $error({
                 type: "ERR_TYPE_MISMATCH",
                 reason: "must be of type 'string'"
@@ -74,14 +74,14 @@ export default class ValidatorBuilder{
         ${schema.max<Number.MAX_SAFE_INTEGER? `if(${schema.id}>${schema.max}){
             $error({
                 type: "ERR_OUT_OF_RANGE",
-                reason: "must be less than ${schema.max}"
+                reason: "must not be over ${schema.max}"
             })
             return false
         }`:""}
         ${schema.min>Number.MIN_SAFE_INTEGER? `if(${schema.id}<${schema.min}){
             $error({
                 type: "ERR_OUT_OF_RANGE",
-                reason: "must be greater than than ${schema.min}"
+                reason: "must be at least ${schema.min}"
             })
             return false
         }`:""}
