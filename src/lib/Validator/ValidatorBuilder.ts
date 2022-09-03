@@ -287,7 +287,8 @@ export default class ValidatorBuilder{
     }
     build(schema:GenericSchema, options: BuildValidatorOptions={}): Function|string{
         
-        let validatorSrc=""
+        // (fix) default the error to undefined
+        let validatorSrc=`validate_${schema.id}.error = undefined`
         if(schema.nullable){
             // Add a null/undefined check to the data, if it is null or undefined return true
             validatorSrc+=`
